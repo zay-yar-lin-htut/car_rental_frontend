@@ -11,33 +11,6 @@ export const DEFAULT_HEADERS = {
     'Accept': 'application/json',
 };
 
-// Cache configuration
-export const CACHE_CONFIG = {
-    // Default stale time (5 minutes)
-    defaultStaleTime: 5 * 60 * 1000,
-    // Default cache time (10 minutes)
-    defaultCacheTime: 10 * 60 * 1000,
-    // Cache time for frequently changing data (1 minute)
-    shortCacheTime: 60 * 1000,
-    // Cache time for rarely changing data (1 hour)
-    longCacheTime: 60 * 60 * 1000,
-};
-
-// Retry configuration
-export const RETRY_CONFIG = {
-    // Maximum number of retries
-    maxRetries: 3,
-    // Base delay between retries in milliseconds
-    retryDelay: 1000,
-    // Function to determine if a request should be retried
-    shouldRetry: (error) => {
-        // Retry on network errors or 5xx server errors
-        if (!error.response) return true; // Network error
-        const status = error.response?.status;
-        return status >= 500 && status < 600; // Server error
-    },
-};
-
 // Authentication configuration
 export const AUTH_CONFIG = {
     // Storage key for the authentication token
@@ -99,7 +72,7 @@ export const ERROR_CONFIG = {
     // Get error message based on error object
     getErrorMessage: (error) => {
         if (!error.response) {
-            return ERROR_CONFIG.defaultErrorMessages.network;
+            return ERROR_CONFIG.defaultErrorMessages.unknown;
         }
 
         const status = error.response.status;
@@ -125,7 +98,7 @@ export const API_ENDPOINTS = {
     auth: {
         login: '/api/login',
         register: '/api/register',
-        logout: '/api/user/logout',
+        logout: '/api/logout',
         refreshToken: '/auth/refresh-token',
     },
     // Car endpoints
@@ -155,6 +128,14 @@ export const API_ENDPOINTS = {
         create: '/users',
         update: (id) => `/users/${id}`,
         delete: (id) => `/users/${id}`,
-        profile: '/users/profile',
+        updateProfile: '/api/update-profile',
+        getUserProfile: '/api/profile'
     },
+};
+
+//User Role Type 
+export const USER_ROLE_TYPE = {
+    ADMIN: 3,
+    STUFF: 2,
+    USER: 1,
 };

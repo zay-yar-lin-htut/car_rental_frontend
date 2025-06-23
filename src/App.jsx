@@ -2,24 +2,46 @@ import React from "react";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router";
 import Home from "./view/home/Home";
 import Login from "./view/login/Login";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import ExampleUsage from "./services/ExampleUsage";
 import { AUTH_CONFIG } from "./services/Configuration";
-import Cars from "./view/cars/Cars";
 import Pricing from "./view/pricing/Pricing";
 import Register from "./view/login/Register";
-import UserProfile from "./view/login/UserProfile";
+import UserProfile from "./view/profile/UserProfile";
+import ProfileView from "./view/profile/components/ProfileView";
+import Notification from "./view/profile/components/Notification";
+import History from "./view/profile/components/History";
+import { SnackbarProvider } from "./contexts/ErrorMessage";
 
 // Protected Route wrapper component
-const ProtectedRoute = ({ element }) => {
-	return AUTH_CONFIG.isAuthenticated() ? (
-		element
-	) : (
-		<Navigate
-			to='/login'
-			replace
-		/>
-	);
+// ProtectedRoute.js - For routes that require authentication
+const ProtectedRoute = ({ children }) => {
+	const isAuthenticated = AUTH_CONFIG.isAuthenticated();
+
+	if (!isAuthenticated) {
+		return (
+			<Navigate
+				to='/login'
+				replace
+			/>
+		);
+	}
+
+	return children;
+};
+
+// AuthRoute.js - For auth pages that should only be accessible when not logged in
+const AuthRoute = ({ children }) => {
+	const isAuthenticated = AUTH_CONFIG.isAuthenticated();
+
+	if (isAuthenticated) {
+		return (
+			<Navigate
+				to='/home'
+				replace
+			/>
+		);
+	}
+
+	return children;
 };
 
 const router = createBrowserRouter([
@@ -33,37 +55,57 @@ const router = createBrowserRouter([
 	},
 	{
 		path: "/login",
-		element: <Login />,
+		element: (
+			<AuthRoute>
+				<Login />
+			</AuthRoute>
+		),
 	},
 	{
 		path: "/register",
-		element: <Register />,
-	},
-	{
-		path: "/test",
-		element: <ExampleUsage />,
-	},
-	{
-		path: "/cars",
-		element: <ProtectedRoute element={<Cars />} />,
+		element: (
+			<AuthRoute>
+				<Register />
+			</AuthRoute>
+		),
 	},
 	{
 		path: "/pricing",
-		element: <ProtectedRoute element={<Pricing />} />,
+		element: (
+			<ProtectedRoute>
+				<Pricing />
+			</ProtectedRoute>
+		),
 	},
 	{
 		path: "/user-profile",
-		element: <ProtectedRoute element={<UserProfile />} />,
+		element: (
+			<ProtectedRoute>
+				<UserProfile />
+			</ProtectedRoute>
+		),
+		children: [
+			{
+				index: true,
+				element: <ProfileView />, // Already protected by parent route
+			},
+			{
+				path: "notification",
+				element: <Notification />, // Already protected by parent route
+			},
+			{
+				path: "history",
+				element: <History />, // Already protected by parent route
+			},
+		],
 	},
 ]);
 
-const queryClient = new QueryClient();
-
 const App = () => {
 	return (
-		<QueryClientProvider client={queryClient}>
+		<SnackbarProvider>
 			<RouterProvider router={router} />
-		</QueryClientProvider>
+		</SnackbarProvider>
 	);
 };
 

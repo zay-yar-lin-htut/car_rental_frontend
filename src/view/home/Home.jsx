@@ -4,18 +4,19 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import AOS from "aos";
 import "aos/dist/aos.css"; // Import AOS CSS
-import { useAuth } from "../../services/DataServices";
-import { AUTH_CONFIG } from "../../services/Configuration";
+import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
+import { createDataServices } from "../../services/DataServices";
+import { useSnackbar } from "../../contexts/ErrorMessage";
 
 // Register ScrollTrigger plugin
 gsap.registerPlugin(ScrollTrigger);
+const dataServices = createDataServices();
 
 const Home = () => {
 	const [logouting, setLogouting] = useState(false);
 	const isLogin = AUTH_CONFIG.isAuthenticated();
-	const { logout } = useAuth();
 	const navigate = useNavigate();
-
+	const { showSnackbar } = useSnackbar();
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const navRef = useRef(null);
 
@@ -29,25 +30,25 @@ const Home = () => {
 		{ to: "/contact", label: "Contact", active: false },
 	];
 
-	const hanldeLogout = () => {
+	const handleLogout = () => {
 		setLogouting(true);
-		logout.mutate(null, {
-			onSuccess: () => {
-				// These are already handled in the logout mutation's onSuccess callback
-				// AUTH_CONFIG.clearToken();
-				// AUTH_CONFIG.clearUserData();
-				console.log("Logout successful");
+
+		dataServices
+			.Logout(API_ENDPOINTS.auth.logout)
+			.then((response) => {
 				setLogouting(false);
-				navigate("/");
-			},
-			onError: (error) => {
+				AUTH_CONFIG.clearToken();
+				AUTH_CONFIG.clearUserData();
+				showSnackbar(response.message, "success");
+			})
+			.catch((error) => {
 				console.error("Logout failed:", error);
 				setLogouting(false);
-			},
-		});
+				showSnackbar(error.message, "error");
+			});
 	};
 	console.log("Auth Token:", AUTH_CONFIG.getToken());
-	console.log("user Data :", AUTH_CONFIG.getUserData());
+	console.log("user Data :", AUTH_CONFIG.getUserData()); // Assuming this returns user data if logged in
 
 	useEffect(() => {
 		// Initialize AOS
@@ -102,8 +103,8 @@ const Home = () => {
 						<div className='flex-shrink-0 flex items-center'>
 							<Link
 								to='/'
-								className='text-blue-600 font-bold text-xl'>
-								CarRental
+								className='text-blue-800 font-bold font-serif text-xl'>
+								JourneyWheel
 							</Link>
 						</div>
 
@@ -128,7 +129,7 @@ const Home = () => {
 							{isLogin ? (
 								<>
 									<Link
-										onClick={hanldeLogout}
+										onClick={handleLogout}
 										className='bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition duration-300 flex items-center'>
 										{logouting ? (
 											<>
@@ -157,7 +158,7 @@ const Home = () => {
 									</Link>
 									<div
 										onClick={() => navigate("/user-profile")}
-										className='bg-amber-900 w-10 h-10 rounded-full overflow-hidden '>
+										className='bg-amber-900 w-10 h-10 rounded-full overflow-hidden hover:cursor-pointer '>
 										<img
 											src='https://cdn.pixabay.com/photo/2025/05/09/01/22/waiting-9588284_1280.jpg'
 											alt='user-avatar'
@@ -246,7 +247,7 @@ const Home = () => {
 							<div className='flex items-center px-5 space-x-3'>
 								{isLogin ? (
 									<Link
-										onClick={hanldeLogout}
+										onClick={handleLogout}
 										className='text-blue-600 border border-blue-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-50 w-full text-center'>
 										Logout
 									</Link>
@@ -273,7 +274,7 @@ const Home = () => {
 			{/* Main content area */}
 			<div className='w-full h-[calc(100vh-4rem)] relative'>
 				<div className='lg:max-w-[70%] h-full mix-w-full    bg-blue-600'>
-					<div className='max-w-[600px] h-[22rem] mx-auto lg:h-full px-10 sm:px-0  flex flex-col justify-center'>
+					<div className='max-w-[600px] h-[20rem]    lg:h-full px-4 lg:ml-42 lg:px-0  flex flex-col justify-center'>
 						<p
 							data-aos='fade-right'
 							className='text-white text-base sm:text-xl font-bold uppercase'>
@@ -291,8 +292,7 @@ const Home = () => {
 						<p
 							data-aos='fade-right'
 							className='text-gray-300 text-sm  sm:text-lg py-4'>
-							We offer a wide range of cars <br /> to suit every need and
-							budget.
+							We offer a wide range of cars to suit every need and budget.
 						</p>
 					</div>
 				</div>
