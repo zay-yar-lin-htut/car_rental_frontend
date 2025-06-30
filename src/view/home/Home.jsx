@@ -1,38 +1,59 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import AOS from "aos";
-import "aos/dist/aos.css"; // Import AOS CSS
+import {
+	Box,
+	Typography,
+	Button,
+	Stack,
+	AppBar,
+	Toolbar,
+	IconButton,
+	Drawer,
+	List,
+	ListItem,
+	ListItemText,
+	CircularProgress,
+} from "@mui/material";
+
+// Icons
+import SpeedIcon from "@mui/icons-material/Speed";
+import BoltIcon from "@mui/icons-material/Bolt";
+import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
+import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
+import MenuIcon from "@mui/icons-material/Menu";
+
+// Assuming these are correctly set up in your project
 import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
 import { createDataServices } from "../../services/DataServices";
 import { useSnackbar } from "../../contexts/ErrorMessage";
 
-// Register ScrollTrigger plugin
-gsap.registerPlugin(ScrollTrigger);
 const dataServices = createDataServices();
 
-const Home = () => {
+// --- Static data for the page design ---
+const carSpecs = [
+	{ icon: <BoltIcon />, value: "650 HP", label: "Power" },
+	{ icon: <SpeedIcon />, value: "3.5 SEC", label: "0-60 MPH" },
+	{ icon: <DirectionsCarIcon />, value: "11.4 SEC", label: "1/4 MILE" },
+	{ icon: <AttachMoneyIcon />, value: "$68,000", label: "Starting Price" },
+];
+
+const CamaroShowcaseHome = () => {
+	// --- State and Logic ---
 	const [logouting, setLogouting] = useState(false);
 	const isLogin = AUTH_CONFIG.isAuthenticated();
 	const navigate = useNavigate();
 	const { showSnackbar } = useSnackbar();
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
-	const navRef = useRef(null);
 
-	// Navigation links data
 	const navLinks = [
-		{ to: "/", label: "Home", active: true },
-		{ to: "/cars", label: "Our Cars", active: false },
-		{ to: "/pricing", label: "Pricing", active: false },
-		{ to: "/locations", label: "Locations", active: false },
-		{ to: "/about", label: "About Us", active: false },
-		{ to: "/contact", label: "Contact", active: false },
+		{ to: "/", label: "Home" },
+		{ to: "/cars", label: "Models" },
+		{ to: "/innovation", label: "Innovation" },
+		{ to: "/user-profile", label: "Profile" },
 	];
 
 	const handleLogout = () => {
 		setLogouting(true);
-
 		dataServices
 			.Logout(API_ENDPOINTS.auth.logout)
 			.then((response) => {
@@ -40,318 +61,349 @@ const Home = () => {
 				AUTH_CONFIG.clearToken();
 				AUTH_CONFIG.clearUserData();
 				showSnackbar(response.message, "success");
+				navigate(0);
 			})
 			.catch((error) => {
-				console.error("Logout failed:", error);
 				setLogouting(false);
 				showSnackbar(error.message, "error");
 			});
 	};
-	console.log("Auth Token:", AUTH_CONFIG.getToken());
-	console.log("user Data :", AUTH_CONFIG.getUserData()); // Assuming this returns user data if logged in
 
-	useEffect(() => {
-		// Initialize AOS
-		AOS.init({
-			duration: 1000, // Animation duration
-			once: false, // Whether animation should happen only once
-			mirror: true, // Whether elements should animate out while scrolling past them
-			easing: "ease-in-out", // Easing type
-		});
-
-		// Initial state of navbar
-		gsap.set(navRef.current, {
-			backgroundColor: "rgba(255, 255, 255, 0.8)",
-			backdropFilter: "blur(0px)",
-			height: "64px",
-		});
-
-		// Create animation for navbar on scroll
-		const navAnimation = gsap.timeline({
-			scrollTrigger: {
-				trigger: "body",
-				start: "top top",
-				end: "50px",
-				scrub: true,
-			},
-		});
-
-		navAnimation.to(navRef.current, {
-			backgroundColor: "rgba(255, 255, 255, 0.95)",
-			backdropFilter: "blur(8px)",
-			boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
-			height: "60px",
-			duration: 0.3,
-			ease: "power2.out",
-		});
-
-		return () => {
-			// Clean up ScrollTrigger when component unmounts
-			ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-		};
-	}, []);
+	// --- Animation Keyframes ---
+	const slideInLeft = {
+		"@keyframes slideInLeft": {
+			"0%": { transform: "translateX(-50px)", opacity: 0 },
+			"100%": { transform: "translateX(0)", opacity: 1 },
+		},
+		animation: "slideInLeft 0.8s ease-out forwards",
+	};
+	const slideInRight = {
+		"@keyframes slideInRight": {
+			"0%": { transform: "translateX(50px) scale(0.95)", opacity: 0 },
+			"100%": { transform: "translateX(0) scale(1)", opacity: 1 },
+		},
+		animation: "slideInRight 1s ease-out forwards",
+	};
+	const fadeIn = {
+		"@keyframes fadeIn": { "0%": { opacity: 0 }, "100%": { opacity: 1 } },
+		animation: "fadeIn 1s ease-out forwards",
+	};
 
 	return (
-		<div className='min-h-screen bg-gray-50'>
-			{/* Navigation Bar */}
-			<nav
-				ref={navRef}
-				className='sticky top-0 z-50 transition-all duration-300'>
-				<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-					<div className='flex justify-between h-16'>
-						{/* Logo */}
-						<div className='flex-shrink-0 flex items-center'>
-							<Link
-								to='/'
-								className='text-blue-800 font-bold font-serif text-xl'>
-								JourneyWheel
-							</Link>
-						</div>
+		<Box
+			sx={{
+				minHeight: "100vh",
+				width: "100%",
+				position: "relative",
+				overflow: "hidden",
+				display: "flex",
+				flexDirection: "column",
+				// **RESPONSIVE BACKGROUND**
+				background: {
+					xs: "linear-gradient(180deg, #000000 0%, #111111 50%, #ffffff 70%)", // Vertical gradient for mobile
+					md: "linear-gradient(135deg, #ffffff 50%, #000000 50.1%)", // Diagonal split for desktop
+				},
+			}}>
+			<TopAppBar
+				navLinks={navLinks}
+				isLogin={isLogin}
+				handleLogout={handleLogout}
+				isLogouting={logouting}
+				onMenuOpen={() => setIsMenuOpen(true)}
+			/>
+			<MobileDrawer
+				navLinks={navLinks}
+				isMenuOpen={isMenuOpen}
+				onMenuClose={() => setIsMenuOpen(false)}
+			/>
 
-						{/* Desktop Navigation Links */}
-						<div className='hidden lg:flex items-center space-x-8'>
-							{navLinks.map((link) => (
-								<Link
-									key={link.to}
-									to={link.to}
-									className={`${
-										link.active
-											? "text-gray-800 border-b-2 border-blue-600"
-											: "text-gray-600 hover:border-b-2 hover:border-blue-600"
-									} hover:text-blue-600 px-3 py-2 text-sm font-medium`}>
-									{link.label}
-								</Link>
-							))}
-						</div>
-
-						{/* Auth Buttons */}
-						<div className='hidden md:flex items-center space-x-4'>
-							{isLogin ? (
-								<>
-									<Link
-										onClick={handleLogout}
-										className='bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition duration-300 flex items-center'>
-										{logouting ? (
-											<>
-												<svg
-													className='animate-spin -ml-1 mr-2 h-4 w-4 text-white'
-													xmlns='http://www.w3.org/2000/svg'
-													fill='none'
-													viewBox='0 0 24 24'>
-													<circle
-														className='opacity-25'
-														cx='12'
-														cy='12'
-														r='10'
-														stroke='currentColor'
-														strokeWidth='4'></circle>
-													<path
-														className='opacity-75'
-														fill='currentColor'
-														d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'></path>
-												</svg>
-												Logging out...
-											</>
-										) : (
-											"Logout"
-										)}
-									</Link>
-									<div
-										onClick={() => navigate("/user-profile")}
-										className='bg-amber-900 w-10 h-10 rounded-full overflow-hidden hover:cursor-pointer '>
-										<img
-											src='https://cdn.pixabay.com/photo/2025/05/09/01/22/waiting-9588284_1280.jpg'
-											alt='user-avatar'
-											className='w-10 h-10 object-cover '
-										/>
-									</div>
-								</>
-							) : (
-								<>
-									<Link
-										to='/login'
-										className='text-blue-600 border border-blue-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-50 transition duration-300'>
-										Login
-									</Link>
-									<Link
-										to='/register'
-										className='bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition duration-300'>
-										Register
-									</Link>
-								</>
-							)}
-						</div>
-
-						{/* Mobile menu button */}
-						<div className='lg:hidden flex items-center'>
-							<button
-								onClick={() => setIsMenuOpen(!isMenuOpen)}
-								className='inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500'>
-								<span className='sr-only'>Open main menu</span>
-								{/* Icon when menu is closed */}
-								{!isMenuOpen ? (
-									<svg
-										className='block h-6 w-6'
-										xmlns='http://www.w3.org/2000/svg'
-										fill='none'
-										viewBox='0 0 24 24'
-										stroke='currentColor'
-										aria-hidden='true'>
-										<path
-											strokeLinecap='round'
-											strokeLinejoin='round'
-											strokeWidth='2'
-											d='M4 6h16M4 12h16M4 18h16'
-										/>
-									</svg>
-								) : (
-									/* Icon when menu is open */
-									<svg
-										className='block h-6 w-6'
-										xmlns='http://www.w3.org/2000/svg'
-										fill='none'
-										viewBox='0 0 24 24'
-										stroke='currentColor'
-										aria-hidden='true'>
-										<path
-											strokeLinecap='round'
-											strokeLinejoin='round'
-											strokeWidth='2'
-											d='M6 18L18 6M6 6l12 12'
-										/>
-									</svg>
-								)}
-							</button>
-						</div>
-					</div>
-				</div>
-
-				{/* Mobile menu, show/hide based on menu state */}
-				{isMenuOpen && (
-					<div className='lg:hidden  bg-white'>
-						<div className='px-2 pt-2 pb-3 space-y-1 sm:px-3'>
-							{navLinks.map((link) => (
-								<Link
-									key={link.to}
-									to={link.to}
-									className={`${
-										link.active
-											? "bg-blue-50 text-blue-600"
-											: "text-gray-600 hover:bg-gray-50 hover:text-blue-600"
-									} block px-3 py-2 rounded-md text-base font-medium`}>
-									{link.label}
-								</Link>
-							))}
-						</div>
-						<div className='pt-4 pb-3 border-t border-gray-200 md:hidden'>
-							<div className='flex items-center px-5 space-x-3'>
-								{isLogin ? (
-									<Link
-										onClick={handleLogout}
-										className='text-blue-600 border border-blue-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-50 w-full text-center'>
-										Logout
-									</Link>
-								) : (
-									<>
-										<Link
-											to='/login'
-											className='text-blue-600 border border-blue-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-50 w-full text-center'>
-											Login
-										</Link>
-										<Link
-											to='/register'
-											className='bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 w-full text-center'>
-											Register
-										</Link>
-									</>
-								)}
-							</div>
-						</div>
-					</div>
-				)}
-			</nav>
-
-			{/* Main content area */}
-			<div className='w-full h-[calc(100vh-4rem)] relative'>
-				<div className='lg:max-w-[70%] h-full mix-w-full    bg-blue-600'>
-					<div className='max-w-[600px] h-[20rem]    lg:h-full px-4 lg:ml-42 lg:px-0  flex flex-col justify-center'>
-						<p
-							data-aos='fade-right'
-							className='text-white text-base sm:text-xl font-bold uppercase'>
-							Find Your Dream Car
-						</p>
-						<h1
-							data-aos='fade-right'
-							className='text-3xl sm:text-4xl font-bold text-white py-4'>
-							Experience the <br />
-							<span className='text-blue-400'>
-								Best <br />
-							</span>{" "}
-							Car Rental
-						</h1>
-						<p
-							data-aos='fade-right'
-							className='text-gray-300 text-sm  sm:text-lg py-4'>
-							We offer a wide range of cars to suit every need and budget.
-						</p>
-					</div>
-				</div>
-				<div
-					data-aos='fade-left'
-					className='absolute top-[25%]  right-[15%] hidden lg:inline lg:w-[30rem] lg:h-96'>
-					<img
-						src='/home-img.png'
-						alt='home-car'
-						className='w-full h-full object-contain'
-					/>
-				</div>
-				<div
-					// data-aos='slide-up'
-					className='min-w-full h-2/5 lg:hidden bg-slate-50 absolute bottom-0 left-0 '>
-					<div
-						data-aos='fade-left'
-						className='sm:w-[25rem] w-72 h-72 sm:h-[25rem] relative left-[25%]   sm:-top-[80%] -top-[50%] '>
-						<img
-							src='/home-img.png'
-							alt='home-car'
-							className='w-full h-full object-contain'
-						/>
-					</div>
-				</div>
-
-				{/* Add some scrollable content to test the animation */}
-				<div className='py-20 bg-cyan-900'>
-					<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-						<div className='text-center'>
-							<h2 className='text-3xl font-extrabold text-gray-900 sm:text-4xl'>
-								Find Your Perfect Ride
-							</h2>
-							<p className='mt-4 text-xl text-gray-500'>
-								Browse our extensive collection of vehicles for any occasion
-							</p>
-						</div>
-
-						{/* Add more content sections to enable scrolling */}
-						{[...Array(5)].map((_, i) => (
-							<div
-								key={i}
-								className='mt-20 bg-white p-10 rounded-lg shadow-md'>
-								<h3 className='text-2xl font-bold text-gray-800'>
-									Section {i + 1}
-								</h3>
-								<p className='mt-4 text-gray-600'>
-									Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-									do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-									Ut enim ad minim veniam, quis nostrud exercitation ullamco
-									laboris nisi ut aliquip ex ea commodo consequat.
-								</p>
-							</div>
+			<Box
+				component='main'
+				sx={{
+					flexGrow: 1,
+					display: "flex",
+					width: "100%",
+					flexDirection: { xs: "column", md: "row" },
+					bgcolor: "transparent",
+					pt: { xs: 10, md: 0 },
+				}}>
+				{/* Left Content Pane */}
+				<Box
+					sx={{
+						width: { xs: "100%", md: "45%" },
+						display: "flex",
+						flexDirection: "column",
+						justifyContent: "center",
+						// **RESPONSIVE PADDING**
+						p: { xs: 3, sm: 4, md: 6, lg: 8 },
+						pt: { xs: 12, md: 6, lg: 8 },
+						textAlign: { xs: "center", md: "left" },
+						zIndex: 2,
+					}}>
+					<Typography
+						variant='h1'
+						sx={{
+							...slideInLeft,
+							fontWeight: 900,
+							// Responsive text color based on background
+							color: { xs: "white", md: "black" },
+							// **RESPONSIVE TYPOGRAPHY**
+							fontSize: {
+								xs: "2.5rem",
+								sm: "3.5rem",
+								md: "4rem",
+								lg: "5.5rem",
+							},
+							textTransform: "uppercase",
+							lineHeight: 1,
+						}}>
+						Chevrolet Camaro
+					</Typography>
+					<Typography
+						sx={{
+							...fadeIn,
+							animationDelay: "0.2s",
+							maxWidth: "500px",
+							mt: 3,
+							mx: { xs: "auto", md: 0 },
+							// Responsive text color
+							color: { xs: "grey.400", md: "grey.700" },
+						}}>
+						Engineered for performance. Designed to turn heads. The legend
+						continues with unparalleled power and iconic style.
+					</Typography>
+					<Button
+						variant='outlined'
+						sx={{
+							...fadeIn,
+							animationDelay: "0.4s",
+							mt: 4,
+							// **RESPONSIVE BUTTON STYLES**
+							color: { xs: "white", md: "black" },
+							borderColor: { xs: "white", md: "black" },
+							borderRadius: "0px",
+							px: 4,
+							py: 1,
+							alignSelf: { xs: "center", md: "flex-start" },
+							"&:hover": {
+								color: { xs: "black", md: "black" },
+								backgroundColor: { xs: "white", md: "rgba(0,0,0,0.1)" },
+								borderColor: { xs: "white", md: "black" },
+							},
+						}}>
+						Read More
+					</Button>
+					<Stack
+						direction='row'
+						spacing={{ xs: 2, sm: 4 }}
+						flexWrap='wrap'
+						justifyContent={{ xs: "center", md: "flex-start" }}
+						sx={{ ...fadeIn, animationDelay: "0.6s", mt: { xs: 6, md: 8 } }}>
+						{carSpecs.map((spec) => (
+							<SpecItem
+								key={spec.label}
+								icon={spec.icon}
+								value={spec.value}
+								label={spec.label}
+							/>
 						))}
-					</div>
-				</div>
-			</div>
-		</div>
+					</Stack>
+				</Box>
+
+				{/* Right Image Pane */}
+				<Box
+					sx={{
+						width: { xs: "100%", md: "55%" },
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+						flexGrow: 1, // Allow it to take up space on mobile
+					}}>
+					<Box
+						component='img'
+						src='/home-img.png'
+						alt='Chevrolet Camaro'
+						sx={{
+							...slideInRight,
+							objectFit: "contain",
+							zIndex: 1,
+							// **RESPONSIVE IMAGE SIZING & MARGIN**
+							mt: { xs: 4, md: 0 }, // Add margin top on mobile only
+							width: { xs: "80%", sm: "100%", md: "90%", lg: "78%" },
+							maxWidth: { xs: "450px", sm: "550px", md: "1200px" },
+						}}
+					/>
+				</Box>
+			</Box>
+
+			<PageDots />
+		</Box>
 	);
 };
 
-export default Home;
+// --- Sub-components ---
+const TopAppBar = ({
+	navLinks,
+	isLogin,
+	handleLogout,
+	isLogouting,
+	onMenuOpen,
+}) => (
+	<AppBar
+		position='absolute'
+		color='transparent'
+		elevation={0}
+		sx={{ py: 2, zIndex: 10, px: { xs: 2, md: 4 } }}>
+		<Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
+			<Typography
+				variant='h6'
+				component='div'
+				sx={{ fontWeight: "bold", color: { xs: "white", md: "black" } }}>
+				JOURNEYWHEEL
+			</Typography>
+			<Box
+				sx={{
+					flexGrow: 1,
+					display: { xs: "none", md: "flex" },
+					justifyContent: "center",
+					gap: 4,
+				}}>
+				{navLinks.map((link) => (
+					<Link
+						key={link.label}
+						to={link.to}
+						style={{ textDecoration: "none" }}>
+						<Typography
+							sx={{
+								color: { xs: "white", md: "black" },
+								"&:hover": { color: "grey.600" },
+							}}>
+							{link.label}
+						</Typography>
+					</Link>
+				))}
+			</Box>
+			<Box sx={{ display: { xs: "none", md: "block" } }}>
+				{isLogin ? (
+					<Button
+						variant='outlined'
+						sx={{
+							color: { xs: "black", md: "white" },
+							borderColor: { xs: "black", md: "white" },
+						}}
+						onClick={handleLogout}
+						disabled={isLogouting}>
+						{isLogouting ? (
+							<CircularProgress
+								size={24}
+								color='inherit'
+							/>
+						) : (
+							"Sign Out"
+						)}
+					</Button>
+				) : (
+					<Button
+						variant='outlined'
+						sx={{
+							color: { xs: "black", md: "white" },
+							borderColor: { xs: "black", md: "white" },
+						}}
+						component={Link}
+						to='/login'>
+						Sign In
+					</Button>
+				)}
+			</Box>
+			<IconButton
+				color='inherit'
+				aria-label='open drawer'
+				edge='end'
+				onClick={onMenuOpen}
+				sx={{ display: { md: "none" }, color: { xs: "white", md: "black" } }}>
+				<MenuIcon />
+			</IconButton>
+		</Toolbar>
+	</AppBar>
+);
+
+const MobileDrawer = ({ navLinks, isMenuOpen, onMenuClose }) => (
+	<Drawer
+		anchor='right'
+		open={isMenuOpen}
+		onClose={onMenuClose}
+		PaperProps={{ sx: { backgroundColor: "black", color: "white" } }}>
+		<Box
+			sx={{ width: 250 }}
+			role='presentation'
+			onClick={onMenuClose}
+			onKeyDown={onMenuClose}>
+			<List>
+				{navLinks.map((link) => (
+					<ListItem
+						button
+						key={link.label}
+						component={Link}
+						to={link.to}>
+						<ListItemText primary={link.label} />
+					</ListItem>
+				))}
+			</List>
+		</Box>
+	</Drawer>
+);
+
+const SpecItem = ({ icon, value, label }) => (
+	<Stack
+		alignItems='center'
+		spacing={0.5}>
+		{React.cloneElement(icon, {
+			sx: { color: { xs: "white", md: "grey.700" } },
+		})}
+		<Typography
+			variant='h6'
+			sx={{ fontWeight: "bold", color: { xs: "white", md: "black" } }}>
+			{value}
+		</Typography>
+		<Typography
+			variant='caption'
+			sx={{ color: { xs: "grey.400", md: "grey.600" } }}>
+			{label}
+		</Typography>
+	</Stack>
+);
+
+const PageDots = () => {
+	const [activeDot, setActiveDot] = useState(0);
+	return (
+		<Stack
+			direction='row'
+			spacing={1.5}
+			sx={{
+				position: "absolute",
+				bottom: { xs: 16, md: 32 },
+				left: { xs: "50%", md: 64 },
+				transform: { xs: "translateX(-50%)", md: "none" },
+				zIndex: 5,
+			}}>
+			{[...Array(3)].map((_, i) => (
+				<Box
+					key={i}
+					onClick={() => setActiveDot(i)}
+					sx={{
+						width: 8,
+						height: 8,
+						borderRadius: "50%",
+						border: { xs: "1px solid white", md: "1px solid black" },
+						cursor: "pointer",
+						backgroundColor:
+							i === activeDot ? { xs: "white", md: "black" } : "transparent",
+						transition: "background-color 0.3s ease",
+					}}
+				/>
+			))}
+		</Stack>
+	);
+};
+
+export default CamaroShowcaseHome;

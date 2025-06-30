@@ -6,9 +6,6 @@ import { AUTH_CONFIG } from "./services/Configuration";
 import Pricing from "./view/pricing/Pricing";
 import Register from "./view/login/Register";
 import UserProfile from "./view/profile/UserProfile";
-import ProfileView from "./view/profile/components/ProfileView";
-import Notification from "./view/profile/components/Notification";
-import History from "./view/profile/components/History";
 import { SnackbarProvider } from "./contexts/ErrorMessage";
 
 // Protected Route wrapper component
@@ -70,7 +67,7 @@ const router = createBrowserRouter([
 		),
 	},
 	{
-		path: "/pricing",
+		path: "/innovation",
 		element: (
 			<ProtectedRoute>
 				<Pricing />
@@ -84,20 +81,6 @@ const router = createBrowserRouter([
 				<UserProfile />
 			</ProtectedRoute>
 		),
-		children: [
-			{
-				index: true,
-				element: <ProfileView />, // Already protected by parent route
-			},
-			{
-				path: "notification",
-				element: <Notification />, // Already protected by parent route
-			},
-			{
-				path: "history",
-				element: <History />, // Already protected by parent route
-			},
-		],
 	},
 ]);
 
