@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React from "react"; // Assuming this was already here
 import {
 	Box,
 	Typography,
@@ -8,87 +8,98 @@ import {
 	CardMedia,
 	Button,
 	IconButton,
-	Dialog,
-	DialogActions,
-	DialogContent,
-	DialogTitle,
-	TextField,
 	CircularProgress,
-	Alert,
 } from "@mui/material";
-import { Facebook, Instagram, Twitter, Edit } from "@mui/icons-material";
-import { useNavigate } from "react-router";
+import {
+	Facebook,
+	Instagram,
+	Twitter,
+	Edit,
+	ArrowBack as ArrowBackIcon,
+} from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { useUserProfile } from "./useUserProfile";
+import { EditProfileDialog } from "./EditProfileDialog";
 
-// --- Configuration for the editable form fields ---
-const formFields = [
-	{ name: "name", label: "Full Name", type: "text", required: true },
-	{ name: "username", label: "Username", type: "text", required: true },
-	{ name: "email", label: "Email Address", type: "email", required: true },
-	{ name: "phone", label: "Phone Number", type: "tel" },
-	{ name: "avatar", label: "Avatar URL", type: "url" },
-	{ name: "bio", label: "Bio", type: "text", multiline: true, rows: 4 },
-	{ name: "location", label: "Location", type: "text" },
-];
+// --- Animation Keyframes ---
+const slideInLeft = {
+	"@keyframes slideInLeft": {
+		"0%": { transform: "translateX(-100%)", opacity: 0 },
+		"100%": { transform: "translateX(0)", opacity: 1 },
+	},
+	animation: "slideInLeft 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards",
+};
 
+const slideInRight = {
+	"@keyframes slideInRight": {
+		"0%": { transform: "translateX(100%)", opacity: 0 },
+		"100%": { transform: "translateX(0)", opacity: 1 },
+	},
+	animation: "slideInRight 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards",
+};
+
+const popIn = {
+	"@keyframes popIn": {
+		"0%": { transform: "translate(-50%, -50%) scale(0.8)", opacity: 0 },
+		"100%": { transform: "translate(-50%, -50%) scale(1)", opacity: 1 },
+	},
+	animation: "popIn 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) 0.3s forwards",
+};
+
+const fadeIn = {
+	"@keyframes fadeIn": { "0%": { opacity: 0 }, "100%": { opacity: 1 } },
+	animation: "fadeIn 0.8s ease-out 0.6s forwards",
+};
 const ModernUserProfile = () => {
-	const navigate = useNavigate();
-	// --- STATE MANAGEMENT ---
-	const [user, setUser] = useState({
-		name: "Alexandra Chen",
-		username: "alexchen",
-		email: "alex.chen@example.com",
-		phone: "555-010-9876",
-		avatar:
-			"https://images.unsplash.com/photo-1521119989659-a83eee488004?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=870&q=80",
-		bio: "Lead product designer with a passion for creating human-centered digital experiences. Believer in the power of simplicity and thoughtful design to solve complex problems.",
-		location: "San Francisco, CA",
-		joinedDate: "March 2021",
-	});
-
-	const [openDialog, setOpenDialog] = useState(false);
-	const [formData, setFormData] = useState({});
-	const [error, setError] = useState("");
-	const [isLoading, setIsLoading] = useState(false);
-
-	// --- DIALOG & FORM LOGIC ---
-	const handleOpenDialog = () => {
-		setFormData(user);
-		setError("");
-		setOpenDialog(true);
-	};
-
-	const handleCloseDialog = () => {
-		if (isLoading) return;
-		setOpenDialog(false);
-	};
-
-	const handleInputChange = (e) => {
-		const { name, value } = e.target;
-		setFormData((prev) => ({ ...prev, [name]: value }));
-	};
-
-	const handleSubmit = async () => {
-		setIsLoading(true);
-		setError("");
-
-		if (!formData.name || !formData.username || !formData.email) {
-			setError("Name, Username, and Email are required fields.");
-			setIsLoading(false);
-			return;
-		}
-
-		try {
-			await new Promise((resolve) => setTimeout(resolve, 1200));
-			setUser({ ...user, ...formData });
-			handleCloseDialog();
-		} catch (err) {
-			setError("Failed to update profile. Please try again.");
-		} finally {
-			setIsLoading(false);
-		}
-	};
+	const {
+		user,
+		profileLoading,
+		openDialog,
+		isSaving,
+		navigate,
+		handleOpenDialog,
+		handleCloseDialog,
+		handleProfileUpdate,
+		isUpload,
+		setIsUpload,
+	} = useUserProfile();
 
 	// --- RENDER LOGIC ---
+	if (profileLoading) {
+		return (
+			<Box
+				sx={{
+					display: "flex",
+					minHeight: "100vh",
+					alignItems: "center",
+					justifyContent: "center",
+				}}>
+				<CircularProgress />
+			</Box>
+		);
+	}
+
+	if (!user) {
+		return (
+			<Box
+				sx={{
+					display: "flex",
+					minHeight: "100vh",
+					alignItems: "center",
+					justifyContent: "center",
+					flexDirection: "column",
+					gap: 2,
+				}}>
+				<Typography>Could not load profile.</Typography>
+				<Button
+					variant='contained'
+					onClick={() => navigate("/login")}>
+					Go to Login
+				</Button>
+			</Box>
+		);
+	}
+
 	return (
 		<>
 			<Box
@@ -103,6 +114,7 @@ const ModernUserProfile = () => {
 				{/* ===== Left Black Pane (UPDATED) ===== */}
 				<Box
 					sx={{
+						...slideInLeft,
 						flexGrow: 1,
 						flexBasis: { xs: "auto", md: "40%" }, // UPDATED from flex: 1
 						bgcolor: "#111",
@@ -120,18 +132,32 @@ const ModernUserProfile = () => {
 						component='h2'
 						fontWeight={600}
 						letterSpacing={2}
-						sx={{ cursor: "pointer" }}
-						onClick={() => navigate("/")}>
+						sx={{ cursor: "pointer" }}>
 						PROFILE
 					</Typography>
 					<Stack
 						direction='row'
+						alignItems='center'
 						spacing={3}
 						justifyContent={{ xs: "center", md: "flex-start" }}>
+						<Button
+							variant='text'
+							startIcon={<ArrowBackIcon />}
+							onClick={() => navigate("/")}
+							sx={{
+								color: "white",
+								textTransform: "none",
+								fontSize: "1rem",
+								"&:hover": {
+									backgroundColor: "rgba(255, 255, 255, 0.08)",
+								},
+							}}>
+							Home
+						</Button>
 						<Link
 							href='#'
 							sx={{
-								color: "text.secondary",
+								color: "white",
 								textDecoration: "none",
 								"&:hover": { color: "common.white" },
 							}}>
@@ -140,7 +166,7 @@ const ModernUserProfile = () => {
 						<Link
 							href='#'
 							sx={{
-								color: "text.secondary",
+								color: "white",
 								textDecoration: "none",
 								"&:hover": { color: "common.white" },
 							}}>
@@ -152,6 +178,7 @@ const ModernUserProfile = () => {
 				{/* ===== Right White Pane (UPDATED) ===== */}
 				<Box
 					sx={{
+						...slideInRight,
 						flexGrow: 1,
 						flexBasis: { xs: "auto", md: "60%" }, // UPDATED from flex: 1
 						bgcolor: "common.white",
@@ -162,31 +189,21 @@ const ModernUserProfile = () => {
 						pt: { xs: 15, md: 6 },
 						transition: "flex-basis 0.5s ease", // Added for smooth transition
 					}}>
-					<Box sx={{ maxWidth: 450 }}>
+					<Box
+						sx={{ maxWidth: 450, ...fadeIn, opacity: 0 }}
+						style={{ animationDelay: "0.6s" }} // Custom delay
+					>
 						<Typography
 							variant='h2'
 							component='h1'
 							fontWeight={900}
-							sx={{ mb: 2, lineHeight: 1.1 }}>
+							sx={{ mb: 2, lineHeight: 1.1, color: "black" }}>
 							{user.name}
 						</Typography>
-						<Typography
-							variant='body1'
-							sx={{
-								color: "text.secondary",
-								fontStyle: "italic",
-								lineHeight: 1.7,
-								mb: 4,
-							}}>
-							"{user.bio}"
-						</Typography>
+
 						<Stack
-							spacing={1.5}
-							sx={{ mb: 5 }}>
-							<DetailRow
-								label='Username'
-								value={user.username}
-							/>
+							spacing={5}
+							sx={{ my: 10, color: "text.secondary" }}>
 							<DetailRow
 								label='Email'
 								value={user.email}
@@ -197,7 +214,7 @@ const ModernUserProfile = () => {
 							/>
 							<DetailRow
 								label='Location'
-								value={user.location}
+								value={user.address}
 							/>
 						</Stack>
 						<Button
@@ -210,7 +227,10 @@ const ModernUserProfile = () => {
 								borderRadius: "50px",
 								px: 3,
 								py: 1,
-								"&:hover": { bgcolor: "grey.100", borderColor: "common.black" },
+								"&:hover": {
+									bgcolor: "grey.100",
+									borderColor: "common.black",
+								},
 							}}>
 							Edit Profile
 						</Button>
@@ -220,6 +240,7 @@ const ModernUserProfile = () => {
 				{/* ===== Central Floating Avatar (UPDATED) ===== */}
 				<Card
 					sx={{
+						...popIn,
 						position: "absolute", // Absolute for both mobile and desktop
 						top: { xs: "22vh", md: "50%" },
 						left: { xs: "50%", md: "40%" }, // UPDATED from 50% on desktop
@@ -233,9 +254,16 @@ const ModernUserProfile = () => {
 					}}>
 					<CardMedia
 						component='img'
-						image={user.avatar}
+						image={user.profile_image_url}
 						alt={user.name}
-						sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+						sx={{
+							width: "100%",
+							height: "100%",
+							objectFit: "cover",
+							objectPosition: "center",
+							transition: "transform 0.3s ease",
+							"&:hover": { transform: "scale(1.1)" },
+						}}
 					/>
 				</Card>
 
@@ -243,67 +271,13 @@ const ModernUserProfile = () => {
 				<LanguageSelector />
 			</Box>
 
-			{/* ===== Edit Dialog (No changes needed here) ===== */}
-			<Dialog
+			<EditProfileDialog
 				open={openDialog}
 				onClose={handleCloseDialog}
-				maxWidth='sm'
-				fullWidth>
-				<DialogTitle sx={{ fontWeight: "bold" }}>Edit Your Profile</DialogTitle>
-				<DialogContent>
-					{error && (
-						<Alert
-							severity='error'
-							sx={{ mb: 2 }}>
-							{error}
-						</Alert>
-					)}
-					<Box
-						component='form'
-						noValidate
-						autoComplete='off'
-						sx={{ pt: 1 }}>
-						{formFields.map((field) => (
-							<TextField
-								key={field.name}
-								margin='dense'
-								fullWidth
-								id={field.name}
-								name={field.name}
-								label={field.label}
-								type={field.type}
-								value={formData[field.name] || ""}
-								onChange={handleInputChange}
-								required={field.required}
-								multiline={field.multiline}
-								rows={field.rows}
-								disabled={isLoading}
-							/>
-						))}
-					</Box>
-				</DialogContent>
-				<DialogActions sx={{ p: "16px 24px" }}>
-					<Button
-						onClick={handleCloseDialog}
-						disabled={isLoading}
-						color='inherit'>
-						Cancel
-					</Button>
-					<Button
-						onClick={handleSubmit}
-						variant='contained'
-						disabled={isLoading}>
-						{isLoading ? (
-							<CircularProgress
-								size={24}
-								color='inherit'
-							/>
-						) : (
-							"Save Changes"
-						)}
-					</Button>
-				</DialogActions>
-			</Dialog>
+				onSave={handleProfileUpdate}
+				initialData={user}
+				isSaving={isSaving}
+			/>
 		</>
 	);
 };

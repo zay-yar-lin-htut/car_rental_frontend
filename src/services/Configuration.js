@@ -122,19 +122,20 @@ export const API_ENDPOINTS = {
     },
     // User endpoints
     users: {
-        base: '/users',
+        base: '/api',
         getAll: '/users',
-        getById: (id) => `/users/${id}`,
-        create: '/users',
-        update: (id) => `/users/${id}`,
-        delete: (id) => `/users/${id}`,
+        // getById: (id) => `/users/${id}`,
+        // create: '/users',
+        // update: (id) => `/users/${id}`,
+        // delete: (id) => `/users/${id}`,
         updateProfile: '/api/update-profile',
-        getUserProfile: '/api/profile'
+        getUserProfile: '/profile',
+        uploadImage: "/api/upload&update-profile-image"
     },
 };
 
 //User Role Type 
-export const USER_ROLE_TYPE = {
+export const USER_ROLE = {
     ADMIN: 3,
     STUFF: 2,
     USER: 1,

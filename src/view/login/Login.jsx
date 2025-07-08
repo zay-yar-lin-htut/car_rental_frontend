@@ -84,7 +84,7 @@ const Login = () => {
 				}}>
 				{/* IMPORTANT: Your video file must be in the `public` folder */}
 				<source
-					src='/bg-1.mp4'
+					src='/background/bg-1.mp4'
 					type='video/mp4'
 				/>
 				Your browser does not support the video tag.
