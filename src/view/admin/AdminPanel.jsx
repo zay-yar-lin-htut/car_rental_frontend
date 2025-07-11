@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
 	Table,
 	TableBody,
@@ -32,6 +32,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { createDataServices } from "../../services/DataServices";
 import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
 import { useSnackbar } from "../../contexts/ErrorMessage";
+import { useUsers } from "../../contexts/UserProvider";
 
 const dataServices = createDataServices();
 
@@ -50,9 +51,7 @@ const getRoleProps = (roleId) => {
 };
 
 const AdminPanel = () => {
-	const [users, setUsers] = useState([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState(null);
+	const { users, loading, error, refreshUsers } = useUsers();
 	const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 	const [userToDelete, setUserToDelete] = useState(null);
 	const [isDeleting, setIsDeleting] = useState(false);
@@ -70,27 +69,6 @@ const AdminPanel = () => {
 	const { showSnackbar } = useSnackbar();
 	const currentUser = useMemo(() => AUTH_CONFIG.getUserData(), []);
 
-	const fetchUsers = useCallback(async () => {
-		try {
-			setLoading(true);
-			// NOTE: Ensure API_ENDPOINTS.users.getAll is defined in your Configuration.js
-			// It should point to the API endpoint for fetching all users, e.g., '/users'
-			// const response = await dataServices.retrieve(API_ENDPOINTS.users.getAll);
-			// setUsers(response.data);
-			// setError(null);
-		} catch (err) {
-			const errorMessage = err.message || "Failed to fetch users.";
-			setError(errorMessage);
-			showSnackbar(errorMessage, "error");
-		} finally {
-			setLoading(false);
-		}
-	}, [showSnackbar]); // useCallback dependencies are correct
-
-	useEffect(() => {
-		fetchUsers();
-	}, [fetchUsers]);
-
 	const handleOpenConfirm = (userId) => {
 		setUserToDelete(userId);
 		setIsConfirmOpen(true);
@@ -106,11 +84,9 @@ const AdminPanel = () => {
 		if (!userToDelete) return;
 		setIsDeleting(true);
 		try {
-			// NOTE: Ensure API_ENDPOINTS.users.delete(id) is defined in your Configuration.js
-			// It should point to the API endpoint for deleting a user, e.g., `/users/${id}`
 			await dataServices.delete(API_ENDPOINTS.users.delete(userToDelete));
-			setUsers((prevUsers) => prevUsers.filter((u) => u.id !== userToDelete));
 			showSnackbar("User deleted successfully.", "success");
+			refreshUsers(); // Refresh the user list from the context
 		} catch (err) {
 			showSnackbar(err.message || "Failed to delete user.", "error");
 		} finally {
@@ -145,17 +121,12 @@ const AdminPanel = () => {
 		if (!userToEdit) return;
 		setIsSaving(true);
 		try {
-			// NOTE: Ensure API_ENDPOINTS.users.update(id) is defined in your Configuration.js
-			// It should point to the API endpoint for updating a user, e.g., `/users/${id}`
-			const response = await dataServices.retrievePUT(
+			await dataServices.retrievePUT(
 				editFormData,
 				API_ENDPOINTS.users.update(userToEdit.id)
 			);
-			// The API should return the updated user object
-			setUsers((prevUsers) =>
-				prevUsers.map((u) => (u.id === userToEdit.id ? response.data : u))
-			);
 			showSnackbar("User updated successfully.", "success");
+			refreshUsers(); // Refresh the user list from the context
 			handleCloseEdit();
 		} catch (err) {
 			showSnackbar(err.message || "Failed to update user.", "error");
@@ -213,13 +184,13 @@ const AdminPanel = () => {
 		<Paper
 			elevation={3}
 			sx={{
-				p: { xs: 2, md: 4 },
+				p: { xs: 2, md: 3 },
 				overflow: "hidden",
 				color: "white",
-				bgcolor: "",
 			}}>
 			<Typography
 				variant='h4'
+				color='text.primary'
 				gutterBottom>
 				User Management
 			</Typography>
@@ -232,10 +203,16 @@ const AdminPanel = () => {
 				onChange={(e) => setSearchTerm(e.target.value)}
 				sx={{ mb: 2 }}
 			/>
-			<TableContainer>
+			<TableContainer sx={{ maxHeight: 400, overflow: "auto" }}>
 				<Table
 					stickyHeader
-					aria-label='user management table'>
+					aria-label='user management table'
+					sx={{
+						minWidth: 650,
+						backgroundColor: "rgba(255, 255, 255, 0.1)",
+						backdropFilter: "blur(10px)",
+						color: "white",
+					}}>
 					<TableHead>
 						<TableRow>
 							<TableCell>ID</TableCell>
@@ -257,14 +234,14 @@ const AdminPanel = () => {
 						) : (
 							filteredUsers
 								.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-								.map((user) => {
+								.map((user, index) => {
 									const role = getRoleProps(user.user_type_id);
 									const isCurrentUser =
 										currentUser && currentUser.id === user.id;
 									return (
 										<TableRow
 											hover
-											key={user.id}>
+											key={index}>
 											<TableCell>{user.id}</TableCell>
 											<TableCell>{user.name}</TableCell>
 											<TableCell>{user.email}</TableCell>

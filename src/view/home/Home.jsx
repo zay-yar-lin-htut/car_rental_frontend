@@ -27,15 +27,8 @@ import {
 // Icons
 import MenuIcon from "@mui/icons-material/Menu";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
-import WhatshotIcon from "@mui/icons-material/Whatshot";
-import SpeedIcon from "@mui/icons-material/Speed";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import RotateRightIcon from "@mui/icons-material/RotateRight";
-import LayersIcon from "@mui/icons-material/Layers";
-import ScaleIcon from "@mui/icons-material/Scale";
 
 // --- Libs for animations ---
 import AOS from "aos";
@@ -46,7 +39,6 @@ import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
 import { createDataServices } from "../../services/DataServices";
 import { useSnackbar } from "../../contexts/ErrorMessage";
 import { useUserRole } from "../../contexts/userRoleContext";
-
 const dataServices = createDataServices();
 
 // --- Static data for the page design ---
@@ -54,31 +46,6 @@ const porscheStats = [
 	{ value: "331 kW/450 PS", label: "Power (kW)/Power (PS)" },
 	{ value: "3.7 s", label: "Acceleration 0 - 100 km/h" },
 	{ value: "308 km/h", label: "Top speed" },
-];
-
-const keySpecs = [
-	{ icon: <WhatshotIcon fontSize='large' />, value: "450 PS", label: "Power" },
-	{ icon: <SpeedIcon fontSize='large' />, value: "3.7 s", label: "0-100 km/h" },
-	{
-		icon: <TrendingUpIcon fontSize='large' />,
-		value: "308 km/h",
-		label: "Top Speed",
-	},
-	{
-		icon: <RotateRightIcon fontSize='large' />,
-		value: "530 Nm",
-		label: "Max. Torque",
-	},
-	{
-		icon: <LayersIcon fontSize='large' />,
-		value: "2,981 cm³",
-		label: "Displacement",
-	},
-	{
-		icon: <ScaleIcon fontSize='large' />,
-		value: "1,515 kg",
-		label: "Unladen Weight",
-	},
 ];
 
 const highlightsData = [
@@ -209,7 +176,6 @@ const CamaroShowcaseHome = () => {
 
 			<HeroSection />
 			<IntroSection />
-			<TechSpecsSection />
 			<HighlightsSection />
 			<FooterSection />
 
@@ -498,104 +464,6 @@ const IntroSection = () => (
 							src='/car-1.jpg'
 							alt='Porsche 911 Rear View'
 							style={{ width: "100%", borderRadius: 2 }}
-						/>
-					</Box>
-				</Grid>
-			</Grid>
-		</Container>
-	</Box>
-);
-
-const TechSpecsSection = () => (
-	<Box sx={{ py: { xs: 8, md: 15 }, bgcolor: "#1c1c1c" }}>
-		<Container maxWidth='lg'>
-			<Grid
-				container
-				spacing={6}
-				alignItems='center'>
-				<Grid
-					item
-					xs={12}
-					md={7}
-					data-aos='fade-right'>
-					<Typography
-						variant='h3'
-						component='h2'
-						fontWeight={800}
-						gutterBottom
-						sx={{ fontFamily: "'Orbitron', sans-serif", mb: 4 }}>
-						Engineered for Performance
-					</Typography>
-					<Grid
-						container
-						spacing={3}>
-						{keySpecs.map((spec, index) => (
-							<Grid
-								item
-								xs={6}
-								sm={4}
-								key={index}>
-								<Paper
-									variant='outlined'
-									sx={{
-										p: 3,
-										textAlign: "center",
-										height: "100%",
-										borderColor: "rgba(255, 255, 255, 0.1)",
-										background: "rgba(255, 255, 255, 0.05)",
-										color: "white",
-										transition: "all 0.3s ease",
-										"&:hover": {
-											transform: "translateY(-5px)",
-											borderColor: "error.main",
-											background: "rgba(211, 47, 47, 0.1)",
-										},
-									}}>
-									<Box sx={{ color: "error.main", mb: 1 }}>{spec.icon}</Box>
-									<Typography
-										variant='h5'
-										fontWeight='bold'>
-										{spec.value}
-									</Typography>
-									<Typography
-										variant='body2'
-										color='grey.400'>
-										{spec.label}
-									</Typography>
-								</Paper>
-							</Grid>
-						))}
-					</Grid>
-				</Grid>
-				<Grid
-					item
-					xs={12}
-					md={5}
-					data-aos='fade-left'>
-					<Box
-						sx={{
-							width: "100%",
-							height: "100%",
-							position: "relative",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-						}}>
-						<img
-							src='/car-2.png'
-							alt='Porsche 911 Top View Schematic'
-							style={{ width: "100%", maxWidth: "400px", zIndex: 2 }}
-						/>
-						{/* Background Glow */}
-						<Box
-							sx={{
-								position: "absolute",
-								width: "100%",
-								height: "100%",
-								background:
-									"radial-gradient(circle, rgba(211, 47, 47, 0.2) 0%, rgba(28, 28, 28, 0) 70%)",
-								zIndex: 1,
-							}}
 						/>
 					</Box>
 				</Grid>

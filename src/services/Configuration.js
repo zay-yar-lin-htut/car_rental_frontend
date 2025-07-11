@@ -123,7 +123,7 @@ export const API_ENDPOINTS = {
     // User endpoints
     users: {
         base: '/api',
-        getAll: '/users',
+        getAll: '/admin/user-list',
         // getById: (id) => `/users/${id}`,
         // create: '/users',
         // update: (id) => `/users/${id}`,
