@@ -41,42 +41,42 @@ import { useSnackbar } from "../../contexts/ErrorMessage";
 import { useUserRole } from "../../contexts/userRoleContext";
 const dataServices = createDataServices();
 
-// --- Static data for the page design ---
-const porscheStats = [
-	{ value: "331 kW/450 PS", label: "Power (kW)/Power (PS)" },
-	{ value: "3.7 s", label: "Acceleration 0 - 100 km/h" },
-	{ value: "308 km/h", label: "Top speed" },
-];
-
 const highlightsData = [
 	{
-		title: "Weight Reduction",
-		description:
-			"Intelligent composite design for maximum rigidity and minimum weight.",
-		image: "/porsche-highlight-1.jpg",
+		car_type_id: 1,
+		type_name: "Small",
+		description: "Compact and fuel-efficient cars, ideal for city driving and easy parking.",
+		car_type_image_url: "https://pub-64f9509f377f4746abc03aba2add5b1c.r2.dev/Car_Types/687df506ce38d.jpg"
 	},
 	{
-		title: "Sports Seats Plus",
-		description:
-			"Optimal support during dynamic cornering with electric 4-way adjustment.",
-		image: "/porsche-highlight-2.jpg",
+		car_type_id: 2,
+		type_name: "Medium",
+		description: "Balanced size cars offering comfort and practicality for daily commuting and small families.",
+		car_type_image_url: "https://pub-64f9509f377f4746abc03aba2add5b1c.r2.dev/Car_Types/687df53847658.jpg"
 	},
 	{
-		title: "PASM Sports Suspension",
-		description:
-			"Electronically controlled damping system for active, continuous adjustment.",
-		image: "/porsche-highlight-3.jpg",
+		car_type_id: 3,
+		type_name: "Large",
+		description: "Balanced size cars offering comfort and practicality for daily commuting and small families.",
+		car_type_image_url: "https://pub-64f9509f377f4746abc03aba2add5b1c.r2.dev/Car_Types/687df5d3ce128.jpg"
 	},
 	{
-		title: "20/21-inch Carrera S Wheels",
-		description:
-			"Staggered wheel sizes for enhanced stability and driving dynamics.",
-		image: "/porsche-highlight-4.jpg",
+		car_type_id: 4,
+		type_name: "Luxury",
+		description: "Premium vehicles featuring high-end materials, advanced technology, and superior comfort.",
+		car_type_image_url: "https://pub-64f9509f377f4746abc03aba2add5b1c.r2.dev/Car_Types/687df5fa4818b.jpg"
 	},
 	{
-		title: "GT Sports Steering Wheel",
-		description: "Provides a direct and unfiltered connection to the road.",
-		image: "/porsche-highlight-5.jpg",
+		car_type_id: 5,
+		type_name: "People Carrier",
+		description: "Premium vehicles featuring high-end materials, advanced technology, and superior comfort.",
+		car_type_image_url: "https://pub-64f9509f377f4746abc03aba2add5b1c.r2.dev/Car_Types/687df63d1fd1b.jpg"
+	},
+	{
+		car_type_id: 6,
+		type_name: "Van",
+		description: "Versatile vehicles primarily used for transporting goods or large groups of people.",
+		car_type_image_url: "https://pub-64f9509f377f4746abc03aba2add5b1c.r2.dev/Car_Types/687df661d5f93.jpg"
 	},
 ];
 
@@ -357,7 +357,7 @@ const HeroSection = () => (
 				zIndex: 1,
 			}}>
 			<source
-				src='/background/hero-vd.mp4'
+				src='/bg-2.mp4'
 				type='video/mp4'
 			/>
 			Your browser does not support the video tag.
@@ -386,35 +386,22 @@ const HeroSection = () => (
 				sx={{
 					textTransform: "uppercase",
 					fontFamily: "'Orbitron', sans-serif",
-					fontSize: { xs: "3rem", sm: "4.5rem", md: "6rem" },
+					fontSize: { xs: "3rem", sm: "4rem", md: "5rem" },
 				}}>
-				911 Carrera S
+				Welcome to Journey Wheel! 
 			</Typography>
-			<Stack
-				direction='row'
-				spacing={{ xs: 2, md: 6 }}
-				justifyContent='center'
-				sx={{ mt: 4, color: "#fff" }}>
-				{porscheStats.map((stat, index) => (
-					<Box
-						key={stat.label}
-						data-aos='fade-up'
-						data-aos-delay={index * 200}>
-						<Typography
-							variant='h4'
-							fontWeight='bold'
-							sx={{ color: "#fff" }}>
-							{stat.value}
-						</Typography>
-						<Typography
-							variant='body2'
-							color='grey.400'
-							textTransform='uppercase'>
-							{stat.label}
-						</Typography>
-					</Box>
-				))}
-			</Stack>
+			<Typography
+				variant='h1'
+				fontWeight={900}
+				letterSpacing={2}
+				data-aos='fade-down'
+				sx={{
+					textTransform: "uppercase",
+					fontFamily: "'Orbitron', sans-serif",
+					fontSize: { xs: "2rem", sm: "3rem", md: "4rem" },
+				}}>
+				Start Your Journey Today!
+			</Typography>
 		</Container>
 	</Box>
 );
@@ -511,8 +498,8 @@ const HighlightsSection = () => {
 						}}>
 						<Box
 							component='img'
-							src={highlightsData[activeStep].image}
-							alt={highlightsData[activeStep].title}
+							src={highlightsData[activeStep].car_type_image_url}
+							alt={highlightsData[activeStep].type_name}
 							sx={{
 								width: "100%",
 								height: { xs: 250, md: 500 },
@@ -524,7 +511,7 @@ const HighlightsSection = () => {
 								variant='h5'
 								fontWeight='bold'
 								gutterBottom>
-								{highlightsData[activeStep].title}
+								{highlightsData[activeStep].type_name}
 							</Typography>
 							<Typography color='grey.400'>
 								{highlightsData[activeStep].description}

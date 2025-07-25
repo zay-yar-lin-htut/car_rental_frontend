@@ -110,6 +110,11 @@ export const API_ENDPOINTS = {
         update: (id) => `/cars/${id}`,
         delete: (id) => `/cars/${id}`,
     },
+    // Pricing endpoints
+    carTypes: {
+        base: '/api/admin',
+        getAll: '/car-types',
+    },
     // Booking endpoints
     bookings: {
         base: '/bookings',
@@ -122,8 +127,8 @@ export const API_ENDPOINTS = {
     },
     // User endpoints
     users: {
-        base: '/api',
-        getAll: '/admin/user-list',
+        base: '/api/admin',
+        getAll: '/user-list',
         // getById: (id) => `/users/${id}`,
         // create: '/users',
         // update: (id) => `/users/${id}`,
