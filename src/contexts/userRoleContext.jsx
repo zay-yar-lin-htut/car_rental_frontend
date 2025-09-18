@@ -21,7 +21,6 @@ export const UserRoleProvider = ({ children }) => {
 				return null;
 		}
 	}, [user]);
-	console.log("role", role);
 
 	return (
 		<UserRoleContext.Provider value={{ role }}>

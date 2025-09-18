@@ -112,8 +112,13 @@ export const API_ENDPOINTS = {
     },
     // Pricing endpoints
     carTypes: {
-        base: '/api/admin',
+        base: '/api',
         getAll: '/car-types',
+    },
+    // Location endpoints
+    locations: {
+        base: '/api',
+        getAll: '/locations',
     },
     // Booking endpoints
     bookings: {
@@ -127,8 +132,8 @@ export const API_ENDPOINTS = {
     },
     // User endpoints
     users: {
-        base: '/api/admin',
-        getAll: '/user-list',
+        base: '/api',
+        getAll: '/admin/user-list',
         // getById: (id) => `/users/${id}`,
         // create: '/users',
         // update: (id) => `/users/${id}`,
@@ -136,6 +141,10 @@ export const API_ENDPOINTS = {
         updateProfile: '/api/update-profile',
         getUserProfile: '/profile',
         uploadImage: "/api/upload&update-profile-image"
+    },
+    // Image proxy endpoint
+    image: {
+        proxy: '/api/proxy-image',
     },
 };
 

@@ -16,6 +16,8 @@ import Cars from "./view/cars/Cars";
 import AdminLayout from "./view/admin/AdminLayout";
 import Dashboard from "./view/admin/Dashboard";
 import AdminPanel from "./view/admin/AdminPanel";
+import OurLocationsPage from "./view/home/Components/OurLocation";
+import { IntroFormProvider } from "./contexts/IntroFormProvider";
 
 // Protected Route wrapper component
 // ProtectedRoute.js - For routes that require authentication
@@ -125,6 +127,10 @@ const router = createBrowserRouter([
 			</ProtectedRoute>
 		),
 	},
+	{
+		path: "/our-locations",
+		element: <OurLocationsPage />
+	},
 	// Admin Routes with a dedicated layout
 	{
 		element: (
@@ -153,7 +159,9 @@ const App = () => {
 	return (
 		<SnackbarProvider>
 			<UserRoleProvider>
-				<RouterProvider router={router} />
+				<IntroFormProvider>
+					<RouterProvider router={router} />
+				</IntroFormProvider>
 			</UserRoleProvider>
 		</SnackbarProvider>
 	);

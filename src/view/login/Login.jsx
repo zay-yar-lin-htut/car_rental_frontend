@@ -7,7 +7,6 @@ import {
 	Button,
 	Checkbox,
 	FormControlLabel,
-	Divider,
 	Stack,
 	Alert,
 	Paper,
@@ -21,6 +20,8 @@ import GoogleIcon from "@mui/icons-material/Google";
 import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
 import { createDataServices } from "../../services/DataServices";
 import { useSnackbar } from "../../contexts/ErrorMessage";
+import VideoBackground1 from "../common/background1";
+
 
 const dataServices = createDataServices();
 
@@ -54,43 +55,19 @@ const Login = () => {
 		}
 	};
 
-	// --- Render Logic with Background Video ---
 	return (
 		<Box
 			sx={{
 				minHeight: "100vh",
-				position: "relative", // Needed for children positioning
+				position: "relative",
 				display: "flex",
 				alignItems: "center",
 				justifyContent: "center",
-				overflow: "hidden", // Hide anything that might spill out
+				overflow: "hidden", 
 				p: 2,
 			}}>
-			{/* Background Video Element */}
-			<Box
-				component='video'
-				autoPlay
-				loop
-				muted
-				playsInline
-				sx={{
-					position: "absolute",
-					top: 0,
-					left: 0,
-					width: "100%",
-					height: "100%",
-					objectFit: "cover", // Ensures the video covers the screen without distortion
-					zIndex: 0, // Puts it at the very back
-				}}>
-				{/* IMPORTANT: Your video file must be in the `public` folder */}
-				<source
-					src='/background/bg-1.mp4'
-					type='video/mp4'
-				/>
-				Your browser does not support the video tag.
-			</Box>
+			<VideoBackground1 videoSrc="/bg-2.mp4" />
 
-			{/* Dark overlay for better readability */}
 			<Box
 				sx={{
 					position: "absolute",
@@ -242,33 +219,6 @@ const Login = () => {
 						}}>
 						Sign In
 					</LoadingButton>
-					<Divider
-						sx={{
-							my: 2,
-							"&::before, &::after": {
-								borderColor: "rgba(255, 255, 255, 0.3)",
-							},
-						}}>
-						<Typography
-							variant='body2'
-							sx={{ color: "grey.300" }}>
-							OR
-						</Typography>
-					</Divider>
-					<Button
-						fullWidth
-						variant='outlined'
-						startIcon={<GoogleIcon />}
-						sx={{
-							color: "white",
-							borderColor: "rgba(255, 255, 255, 0.5)",
-							"&:hover": {
-								borderColor: "white",
-								bgcolor: "rgba(255, 255, 255, 0.1)",
-							},
-						}}>
-						Sign In with Google
-					</Button>
 				</Box>
 			</Paper>
 		</Box>

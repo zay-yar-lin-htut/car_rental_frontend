@@ -139,6 +139,30 @@ export const createDataServices = () => {
         }
     };
 
+    const retrieveImage = async (imageUrl) => {
+        console.log(BaseUrl + API_ENDPOINTS.images.proxy(imageUrl));
+        try {
+            const response = await fetch(BaseUrl + API_ENDPOINTS.images.proxy(imageUrl), {
+                method: "GET",
+                headers: {
+                    Authorization: "Bearer " + AUTH_CONFIG.getToken(),
+                },
+            });
+
+            if (!response.ok) {
+                const error = new Error();
+                error.response = { status: response.status };
+                throw error;
+            }
+
+            return await response.blob();
+        } catch (error) {
+            const errorMessage = ERROR_CONFIG.getErrorMessage(error);
+            console.error("Error in retrieveImage:", errorMessage);
+            throw new Error(errorMessage);
+        }
+    };
+
     const retrievePOSTFormData = async (data, serviceName) => {
         console.log(BaseUrl + serviceName);
         try {
@@ -219,6 +243,7 @@ export const createDataServices = () => {
     return {
         retrievePOST,
         retrieve,
+        retrieveImage,
         retrievePOSTFormData,
         retrievePUT,
         retrieveDELETE,
