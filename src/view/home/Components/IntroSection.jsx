@@ -15,7 +15,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
-import VideoBackground1 from "../../common/background1";
+import VideoBackground1 from "../../common/Background1";
 import { useNavigate } from "react-router";
 import { useIntroForm } from "../../../contexts/IntroFormProvider";
 
