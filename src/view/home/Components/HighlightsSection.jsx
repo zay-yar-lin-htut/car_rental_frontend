@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Typography,
-  CircularProgress,
-  Container,
-  Card,
-  CardContent,
-  IconButton,
-} from "@mui/material";
+import { Box, Typography, CircularProgress, Container, Card, CardContent } from "@mui/material";
 import Slider from "react-slick";
-import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
-import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { BaseUrl } from "../../../services/BaseUrl";
@@ -22,7 +12,7 @@ const HighlightsSection = ({ highlightsData = [] }) => {
   useEffect(() => {
     highlightsData.forEach((item, index) => {
       const img = new Image();
-      img.src = item.car_type_image_url;
+      img.src = `${BaseUrl}${API_ENDPOINTS.image.proxy}?url=${encodeURIComponent(item.car_type_image_url)}`;
       img.onload = () => {
         setImageLoaded((prev) => ({ ...prev, [index]: true }));
       };
@@ -44,20 +34,15 @@ const HighlightsSection = ({ highlightsData = [] }) => {
         settings: {
           slidesToShow: 1,
           centerPadding: "20px",
-        }
-      }
-    ]
+        },
+      },
+    ],
   };
 
-  if (!highlightsData || highlightsData.length === 0) {
+  if (highlightsData.length === 0) {
     return (
-      <Box sx={{ py: { xs: 8, md: 12 } }}>
-        <Container
-          maxWidth="lg"
-          sx={{ display: "flex", justifyContent: "center" }}
-        >
-          <CircularProgress color="inherit" />
-        </Container>
+      <Box sx={{ py: { xs: 8, md: 12 }, display: "flex", justifyContent: "center" }}>
+        <CircularProgress />
       </Box>
     );
   }
@@ -71,10 +56,10 @@ const HighlightsSection = ({ highlightsData = [] }) => {
           fontWeight={800}
           textAlign="center"
           gutterBottom
-          sx={{ 
+          sx={{
             fontFamily: "'Orbitron', sans-serif",
             mb: 6,
-            color: "text.primary"
+            color: "text.primary",
           }}
         >
           Meet Your Fleet
@@ -82,7 +67,7 @@ const HighlightsSection = ({ highlightsData = [] }) => {
 
         <Slider {...settings}>
           {highlightsData.map((item, index) => (
-            <Box key={index} sx={{ px: 2 }}>
+            <Box key={index} sx={{ px: 2, mb: 2, mt: 2 }}>
               <Card
                 sx={{
                   mx: "auto",
@@ -92,8 +77,8 @@ const HighlightsSection = ({ highlightsData = [] }) => {
                   bgcolor: "background.paper",
                   transition: "transform 0.3s ease-in-out",
                   "&:hover": {
-                    transform: "scale(1.05)"
-                  }
+                    transform: "scale(1.05)",
+                  },
                 }}
               >
                 {!imageLoaded[index] ? (
@@ -136,9 +121,10 @@ const HighlightsSection = ({ highlightsData = [] }) => {
                   </Typography>
                   <Typography
                     color="text.secondary"
-                    sx={{ 
+                    sx={{
+                      height: "70px",
                       fontSize: { xs: "0.9rem", md: "1.2rem" },
-                      mt: 1
+                      mt: 1,
                     }}
                   >
                     {item.description}
