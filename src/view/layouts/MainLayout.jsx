@@ -1,6 +1,6 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
-import VideoBackground1 from "../common/Background1"; // adjust path
+import VideoBackground1 from "../common/background1"; // adjust path
 
 const MainLayout = () => {
   return (

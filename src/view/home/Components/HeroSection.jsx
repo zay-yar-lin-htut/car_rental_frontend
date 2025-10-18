@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Typography, Container } from "@mui/material";
-import VideoBackground1 from "../../common/Background1";
+import VideoBackground1 from "../../common/background1";
 
 const HeroSection = () => {
     return (

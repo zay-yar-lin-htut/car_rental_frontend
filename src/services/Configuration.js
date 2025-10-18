@@ -103,7 +103,7 @@ export const API_ENDPOINTS = {
     },
     // Car endpoints
     cars: {
-        base: '/cars',
+        base: '/api',
         getAll: '/cars',
         getById: (id) => `/cars/${id}`,
         create: '/cars',
@@ -122,10 +122,10 @@ export const API_ENDPOINTS = {
     },
     // Booking endpoints
     bookings: {
-        base: '/bookings',
+        base: '/api',
         getAll: '/bookings',
         getById: (id) => `/bookings/${id}`,
-        create: '/bookings',
+        create: '/api/booking-create',
         update: (id) => `/bookings/${id}`,
         delete: (id) => `/bookings/${id}`,
         getUserBookings: (userId) => `/users/${userId}/bookings`,
@@ -146,6 +146,10 @@ export const API_ENDPOINTS = {
     image: {
         proxy: '/api/proxy-image',
     },
+    location: {
+        base: '/api',
+        getOffice: '/office-locations',
+    }
 };
 
 //User Role Type 

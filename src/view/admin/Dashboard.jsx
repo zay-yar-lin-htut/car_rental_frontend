@@ -7,6 +7,7 @@ import {
 	Alert,
 	Card,
 	CardContent,
+	useTheme,
 } from "@mui/material";
 import {
 	PieChart,
@@ -54,7 +55,8 @@ const StatCard = ({ title, value, icon, color }) => (
 			</Typography>
 			<Typography
 				variant='h4'
-				fontWeight='bold'>
+				fontWeight='bold'
+				color='text.primary'>
 				{value}
 			</Typography>
 		</Box>
@@ -63,6 +65,7 @@ const StatCard = ({ title, value, icon, color }) => (
 
 const Dashboard = () => {
 	const { users, loading, error } = useUsers();
+	const theme = useTheme();
 
 	const stats = useMemo(() => {
 		if (!users) return { totalUsers: 0, chartData: [], roleCounts: {} };
@@ -174,9 +177,9 @@ const Dashboard = () => {
 							<PieChart>
 								<Tooltip
 									contentStyle={{
-										backgroundColor: "rgba(255, 255, 255, 0.9)",
-										border: "1px solid #e0e0e0",
-										borderRadius: 8,
+										backgroundColor: theme.palette.background.paper,
+										border: `1px solid ${theme.palette.divider}`,
+										color: theme.palette.text.primary,
 									}}
 								/>
 								<Legend />

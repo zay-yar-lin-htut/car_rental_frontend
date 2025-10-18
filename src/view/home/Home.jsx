@@ -30,12 +30,12 @@ import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
 import { createDataServices } from "../../services/DataServices";
 import { useSnackbar } from "../../contexts/ErrorMessage";
 import { useUserRole } from "../../contexts/userRoleContext";
-import HeroSection from "./Components/HeroSection";
-import IntroSection from "./Components/IntroSection";
-import HighlightsSection from "./Components/HighlightsSection";
-import FooterSection from "./Components/FooterSection";
+import FooterSection from "./components/FooterSection";
 import { getNavLinks } from "./Config/navigationConfig";
 import { theme } from "./Config/theme";
+import IntroSection from "./Components/IntroSection";
+import HighlightsSection from "./Components/HighlightsSection";
+import OurOffersSection from "./Components/OurOffersSection";
 const dataServices = createDataServices();
 
 // Simple in-memory cache to hold data across component mounts (e.g., navigation)
@@ -48,6 +48,9 @@ const CamaroShowcaseHome = () => {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [showScroll, setShowScroll] = useState(false);
 	const [highlightsData, setHighlightsData] = useState(highlightsCache || []);
+	const [isLoadingHighlights, setIsLoadingHighlights] = useState(
+		!highlightsCache
+	);
 	const { role } = useUserRole();
 	const isLogin = AUTH_CONFIG.isAuthenticated();
 
@@ -64,6 +67,7 @@ const CamaroShowcaseHome = () => {
 
 	useEffect(() => {
 		const fetchHighlightsData = async () => {
+			setIsLoadingHighlights(true);
 			try {
 				const response = await dataServices.retrieve(
 					API_ENDPOINTS.carTypes.base,
@@ -73,6 +77,8 @@ const CamaroShowcaseHome = () => {
 				setHighlightsData(response.data);
 			} catch (error) {
 				showSnackbar(error.message, "error");
+			} finally {
+				setIsLoadingHighlights(false);
 			}
 		};
 
@@ -80,7 +86,7 @@ const CamaroShowcaseHome = () => {
 		if (!highlightsCache) {
 			fetchHighlightsData();
 		}
-	}, []); // eslint-disable-line react-hooks/exhaustive-deps
+	}, []);
 
 	const navLinks = useMemo(() => getNavLinks(isLogin, role), [isLogin, role]);
 
@@ -131,7 +137,11 @@ const CamaroShowcaseHome = () => {
 
 				{/* <HeroSection /> */}
 				<IntroSection />
-				<HighlightsSection highlightsData={highlightsData} />
+				<HighlightsSection
+					highlightsData={highlightsData}
+					isLoading={isLoadingHighlights}
+				/>
+				<OurOffersSection />
 				<FooterSection />
 
 				<Fab

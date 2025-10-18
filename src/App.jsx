@@ -1,23 +1,27 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import {
 	createBrowserRouter,
 	RouterProvider,
 	Navigate,
 } from "react-router-dom";
-import Home from "./view/home/Home";
-import Login from "./view/login/Login";
 import { AUTH_CONFIG } from "./services/Configuration";
-import Pricing from "./view/pricing/Pricing";
-import Register from "./view/login/Register";
-import UserProfile from "./view/profile/UserProfile";
 import { SnackbarProvider } from "./contexts/ErrorMessage";
 import { UserRoleProvider, useUserRole } from "./contexts/userRoleContext";
-import Cars from "./view/cars/Cars";
-import AdminLayout from "./view/admin/AdminLayout";
-import Dashboard from "./view/admin/Dashboard";
-import AdminPanel from "./view/admin/AdminPanel";
-import OurLocationsPage from "./view/home/Components/OurLocation";
 import { IntroFormProvider } from "./contexts/IntroFormProvider";
+
+const Home = lazy(() => import("./view/home/Home"));
+const Login = lazy(() => import("./view/login/Login"));
+const Pricing = lazy(() => import("./view/pricing/Pricing"));
+const Register = lazy(() => import("./view/login/Register"));
+const UserProfile = lazy(() => import("./view/profile/UserProfile"));
+const Cars = lazy(() => import("./view/cars/Cars"));
+const AdminLayout = lazy(() => import("./view/admin/AdminLayout"));
+const Dashboard = lazy(() => import("./view/admin/Dashboard"));
+const AdminPanel = lazy(() => import("./view/admin/AdminPanel"));
+const OurLocationsPage = lazy(() =>
+	import("./view/home/Components/OurLocation")
+);
+const Ride = lazy(() => import("./view/ride/Ride"));
 
 // Protected Route wrapper component
 // ProtectedRoute.js - For routes that require authentication
@@ -129,7 +133,15 @@ const router = createBrowserRouter([
 	},
 	{
 		path: "/our-locations",
-		element: <OurLocationsPage />
+		element: <OurLocationsPage />,
+	},
+	{
+		path: "/ride",
+		element: (
+			<ProtectedRoute>
+				<Ride />
+			</ProtectedRoute>
+		),
 	},
 	// Admin Routes with a dedicated layout
 	{
@@ -160,7 +172,9 @@ const App = () => {
 		<SnackbarProvider>
 			<UserRoleProvider>
 				<IntroFormProvider>
-					<RouterProvider router={router} />
+					<Suspense fallback={<div>Loading...</div>}>
+						<RouterProvider router={router} />
+					</Suspense>
 				</IntroFormProvider>
 			</UserRoleProvider>
 		</SnackbarProvider>

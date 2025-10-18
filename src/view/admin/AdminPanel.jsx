@@ -191,7 +191,6 @@ const AdminPanel = () => {
             sx={{
                 p: { xs: 2, md: 3 },
                 overflow: "hidden",
-                color: "white",
             }}>
             <Typography
                 variant='h4'

@@ -1,14 +1,17 @@
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useContext, useEffect } from "react";
+import dayjs from "dayjs";
 
 const IntroFormContext = createContext();
 
 export const useIntroForm = () => useContext(IntroFormContext);
 
 export const IntroFormProvider = ({ children }) => {
+	const [isLoading, setIsLoading] = useState(false);
+
 	const [formValues, setFormValues] = useState({
-		pickupLocation: "",
+		pickupLocation: [],
 		dropSameAsPickup: true,
-		dropoffLocation: "",
+		dropoffLocation: [],
 		pickupDate: null,
 		pickupTime: null,
 		dropDate: null,
@@ -22,6 +25,8 @@ export const IntroFormProvider = ({ children }) => {
 		setFormValues,
 		expanded,
 		setExpanded,
+		isLoading,
+		setIsLoading,
 	};
 
 	return (
