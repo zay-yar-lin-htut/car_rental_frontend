@@ -30,7 +30,7 @@ import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
 import { createDataServices } from "../../services/DataServices";
 import { useSnackbar } from "../../contexts/ErrorMessage";
 import { useUserRole } from "../../contexts/userRoleContext";
-import FooterSection from "./Components/FooterSection";
+import FooterSection from "./components/FooterSection";
 import { getNavLinks } from "./Config/navigationConfig";
 import { theme } from "./Config/theme";
 import IntroSection from "./Components/IntroSection";

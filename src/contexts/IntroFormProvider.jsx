@@ -20,6 +20,18 @@ export const IntroFormProvider = ({ children }) => {
 
 	const [expanded, setExpanded] = useState(false);
 
+	const resetForm = () => {
+		setFormValues({
+			pickupLocation: [],
+			dropSameAsPickup: true,
+			dropoffLocation: [],
+			pickupDate: null,
+			pickupTime: null,
+			dropDate: null,
+			dropTime: null,
+		});
+	};
+
 	const value = {
 		formValues,
 		setFormValues,
@@ -27,6 +39,7 @@ export const IntroFormProvider = ({ children }) => {
 		setExpanded,
 		isLoading,
 		setIsLoading,
+		resetForm,
 	};
 
 	return (

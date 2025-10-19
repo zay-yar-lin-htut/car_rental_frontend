@@ -45,8 +45,6 @@ const RecenterAutomatically = ({ bounds }) => {
 const Review = ({ onBackToSelect }) => {
 	const { formValues, resetForm } = useIntroForm();
 
-	console.log("formValues", formValues);
-
 	const { showSnackbar } = useSnackbar();
 	const [isConfirming, setIsConfirming] = useState(false);
 	const navigate = useNavigate();
@@ -78,8 +76,6 @@ const Review = ({ onBackToSelect }) => {
 				dropoff_latitude: formValues.dropoffLocation.location[0],
 				dropoff_longitude: formValues.dropoffLocation.location[1],
 			};
-
-			console.log("bookingData", bookingData);
 
 			// Assuming you have a 'bookings' endpoint configured
 			const response = await dataServices.retrievePOST(
@@ -115,19 +111,18 @@ const Review = ({ onBackToSelect }) => {
 		const bounds = [];
 		if (formValues.pickupLocation) {
 			bounds.push([
-				formValues.pickupLocation.latitude,
-				formValues.pickupLocation.longitude,
+				formValues.pickupLocation.location[0],
+				formValues.pickupLocation.location[1],
 			]);
 		}
 		if (formValues.dropoffLocation) {
 			bounds.push([
-				formValues.dropoffLocation.latitude,
-				formValues.dropoffLocation.longitude,
+				formValues.dropoffLocation.location[0],
+				formValues.dropoffLocation.location[1],
 			]);
 		}
 		return bounds;
 	}, [formValues.pickupLocation, formValues.dropoffLocation]);
-	console.log("formValue", formValues);
 
 	return (
 		<BookingLayout title='Review Your Booking'>
@@ -180,7 +175,7 @@ const Review = ({ onBackToSelect }) => {
 					</Box>
 				</Paper>
 
-				{/* {mapBounds.length === 0 ? (
+				{mapBounds.length === 0 ? (
 					<Paper
 						variant='outlined'
 						sx={{ p: 3, mb: 3 }}>
@@ -221,14 +216,16 @@ const Review = ({ onBackToSelect }) => {
 									attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 								/>
 								<Marker position={mapBounds[0]}>
-									<Popup>Pickup: {formValues.pickupLocation.office_name}</Popup>
+									<Popup>
+										Pickup: {formValues.pickupLocation.location_name}
+									</Popup>
 								</Marker>
 								{mapBounds.length > 1 &&
 									JSON.stringify(mapBounds[0]) !==
 										JSON.stringify(mapBounds[1]) && (
 										<Marker position={mapBounds[1]}>
 											<Popup>
-												Drop-off: {formValues.dropoffLocation.office_name}
+												Drop-off: {formValues.dropoffLocation.location_name}
 											</Popup>
 										</Marker>
 									)}
@@ -236,7 +233,7 @@ const Review = ({ onBackToSelect }) => {
 							</MapContainer>
 						</Box>
 					</Paper>
-				)} */}
+				)}
 
 				{/* Vehicle Details */}
 				<Paper

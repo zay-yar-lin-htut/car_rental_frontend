@@ -15,6 +15,9 @@ import {
 	CardMedia,
 	CardContent,
 	Skeleton,
+	Select,
+	MenuItem,
+	FormControl,
 	Pagination,
 	Fab,
 	Zoom,
@@ -35,6 +38,7 @@ import FlareIcon from "@mui/icons-material/Flare";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { calculateRentalCost } from "./costCalculator";
 import Review from "./Review";
+import InputLabel from "@mui/material/InputLabel";
 import BookingLayout from "./BookingLayout";
 
 const Ride = () => {
@@ -42,13 +46,15 @@ const Ride = () => {
 	const { formValues, setFormValues, isLoading, setIsLoading } = useIntroForm();
 	const [isReviewing, setIsReviewing] = useState(false);
 	const [vehicles, setVehicles] = useState([]);
+	const [carTypes, setCarTypes] = useState([]);
 	const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
 	const { showSnackbar } = useSnackbar();
 	const [page, setPage] = useState(1);
 	const [max, setMax] = useState(10);
 	const [asc, setAsc] = useState(true);
 	const [totalPages, setTotalPages] = useState(0);
-	const [filter, setFilter] = useState("");
+	const [fuelType, setFuelType] = useState("");
+	const [carTypeId, setCarTypeId] = useState("");
 	const [showBackToTop, setShowBackToTop] = useState(false);
 	const navigate = useNavigate();
 	useEffect(() => {
@@ -79,12 +85,27 @@ const Ride = () => {
 		};
 	}, []);
 
+	useEffect(() => {
+		const fetchCarTypes = async () => {
+			try {
+				const response = await dataServices().retrieve(
+					API_ENDPOINTS.carTypes.base,
+					API_ENDPOINTS.carTypes.getAll
+				);
+				setCarTypes(response.data);
+			} catch (error) {
+				showSnackbar("Could not fetch car types.", "error");
+			}
+		};
+		fetchCarTypes();
+	}, []);
+
 	const fetchVehicles = async () => {
 		setIsVehiclesLoading(true);
 		try {
 			const response = await dataServices().retrieve(
 				API_ENDPOINTS.cars.base,
-				`${API_ENDPOINTS.cars.getAll}?first=${page}&max=${max}&asc=${asc}&filter=${filter}`
+				`${API_ENDPOINTS.cars.getAll}?first=${page}&max=${max}&asc=${asc}&car_type_id=${carTypeId}&fuel_type=${fuelType}`
 			);
 			setVehicles(response.data.cars);
 			setTotalPages(Math.ceil(response.data.totalCars / max));
@@ -98,11 +119,16 @@ const Ride = () => {
 	useEffect(() => {
 		fetchVehicles();
 		// This effect should re-run when any of these dependencies change.
-	}, [page, asc, filter]);
+	}, [page, asc, fuelType, carTypeId]);
 
-	const handleFilterChange = (e) => {
-		setFilter(e.target.value);
+	const handleFuelTypeChange = (e) => {
+		setFuelType(e.target.value);
 		setPage(1); // Reset to first page on filter change
+	};
+
+	const handleCarTypeChange = (e) => {
+		setCarTypeId(e.target.value);
+		setPage(1);
 	};
 
 	// Helper to safely format dates, returning an empty string if the date is invalid/null
@@ -196,14 +222,49 @@ const Ride = () => {
 			<Box
 				sx={{
 					display: "flex",
+					flexDirection: { xs: "column", sm: "row" },
 					justifyContent: "space-between",
+					alignItems: "center",
 					mb: 2,
+					gap: 2,
 				}}>
-				<TextField
-					label='Filter by car type'
-					value={filter}
-					onChange={handleFilterChange}
-				/>
+				<Box
+					sx={{
+						display: "flex",
+						gap: 2,
+						width: { xs: "100%", sm: "300px" },
+					}}>
+					<FormControl fullWidth>
+						<InputLabel>Car Type</InputLabel>
+						<Select
+							value={carTypeId}
+							label='Car Type'
+							onChange={handleCarTypeChange}>
+							<MenuItem value=''>
+								<em>All Types</em>
+							</MenuItem>
+							{carTypes.map((type) => (
+								<MenuItem
+									key={type.car_type_id}
+									value={type.car_type_id}>
+									{type.type_name}
+								</MenuItem>
+							))}
+						</Select>
+					</FormControl>
+					<FormControl fullWidth>
+						<InputLabel>Fuel Type</InputLabel>
+						<Select
+							value={fuelType}
+							label='Fuel Type'
+							onChange={handleFuelTypeChange}>
+							<MenuItem value=''>All</MenuItem>
+							<MenuItem value='petrol'>Petrol</MenuItem>
+							<MenuItem value='diesel'>Diesel</MenuItem>
+							<MenuItem value='electric'>Electric</MenuItem>
+						</Select>
+					</FormControl>
+				</Box>
 				<Button
 					onClick={() => {
 						setAsc(!asc);
@@ -405,7 +466,7 @@ const Ride = () => {
 					No vehicles found matching your criteria.
 				</Typography>
 			)}
-			{totalPages > 1 && (
+			{vehicles.length > 0 && totalPages > 1 && (
 				<Box
 					sx={{
 						display: "flex",

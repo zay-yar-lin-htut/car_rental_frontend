@@ -21,7 +21,7 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { API_ENDPOINTS } from "../../services/Configuration";
 import { createDataServices } from "../../services/DataServices";
 import { useSnackbar } from "../../contexts/ErrorMessage";
-import VideoBackground1 from "../common/Background1";
+import VideoBackground1 from "../common/background1";
 
 const dataServices = createDataServices();
 

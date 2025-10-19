@@ -11,19 +11,22 @@ import {
 } from "@mui/material";
 
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
-import VideoBackground1 from "../../common/Background1";
+import VideoBackground1 from "../../common/background1";
 import { useNavigate } from "react-router";
 import { useIntroForm } from "../../../contexts/IntroFormProvider";
 import LocationSelector from "../../common/LocationSelector";
 import FutureDatePicker from "../../common/FutureDatePicker";
 import dayjs from "dayjs";
 import { createDataServices } from "../../../services/DataServices";
+import { useSnackbar } from "../../../contexts/ErrorMessage";
 import { API_ENDPOINTS } from "../../../services/Configuration";
 
 const IntroSection = () => {
 	const dataServices = createDataServices();
+	const { showSnackbar } = useSnackbar();
 	const navigate = useNavigate();
 	const [locations, setLocations] = React.useState([]);
+	const [errors, setErrors] = React.useState({});
 	const {
 		formValues,
 		setFormValues,
@@ -44,7 +47,6 @@ const IntroSection = () => {
 
 				setLocations(response.data);
 			} catch (error) {
-				console.error("Error fetching office location:", error);
 			} finally {
 				setIsLoading(false);
 			}
@@ -61,10 +63,8 @@ const IntroSection = () => {
 		const selectedLocation = locations.find(
 			(loc) => String(loc.location) === String(value)
 		);
-		console.log("selectedLocation", selectedLocation);
 
 		const newFormValues = { ...formValues, [name]: selectedLocation };
-		console.log("newFormValues", newFormValues);
 
 		if (name === "pickupLocation" && newFormValues.dropSameAsPickup) {
 			newFormValues.dropoffLocation = selectedLocation;
@@ -95,8 +95,39 @@ const IntroSection = () => {
 		setFormValues({ ...formValues, [field]: value });
 	};
 
+	const handleTimeError = (field, error) => {
+		setErrors((prev) => ({ ...prev, [field]: error }));
+	};
+
+	const getValidationMessage = () => {
+		if (!formValues.pickupLocation) return "Please select a pickup location.";
+		if (!formValues.dropoffLocation)
+			return "Please select a drop-off location.";
+		if (!formValues.pickupDate) return "Please select a pickup date.";
+		if (!formValues.dropDate) return "Please select a drop-off date.";
+		if (!formValues.pickupTime) return "Please select a pickup time.";
+		if (errors.pickupTime) {
+			if (errors.pickupTime === "minTime")
+				return "Pickup time cannot be in the past.";
+			return "Invalid pickup time.";
+		}
+		if (!formValues.dropTime) return "Please select a drop-off time.";
+		if (errors.dropTime) {
+			if (errors.dropTime === "minTime")
+				return "Drop-off time must be at least 1 hour after pickup.";
+			return "Invalid drop-off time.";
+		}
+		return null;
+	};
+
 	const handleSubmit = (e) => {
 		e.preventDefault();
+		const validationMessage = getValidationMessage();
+		if (validationMessage) {
+			showSnackbar(validationMessage, "error");
+			return;
+		}
+
 		const updatedFormValues = { ...formValues };
 		if (!updatedFormValues.pickupTime) {
 			updatedFormValues.pickupTime = dayjs().startOf("day");
@@ -111,8 +142,8 @@ const IntroSection = () => {
 
 	// Determine the minimum pickup time. If the selected date is today,
 	// it must be at least 1 hour from the current time.
-	const minPickupTime = formValues.pickupDate?.isSame(dayjs(), "day")
-		? dayjs().add(1, "hours")
+	const minPickupTime = formValues.pickupDate?.isSame(dayjs(), "day") // If it's today
+		? dayjs().add(20, "minutes") // Set min time to 20 minutes from now
 		: undefined;
 
 	// Determine the minimum drop-off time. If the dates are the same,
@@ -240,6 +271,7 @@ const IntroSection = () => {
 										value={formValues.pickupTime}
 										onChange={(val) => handleTimeChange("pickupTime", val)}
 										minTime={minPickupTime}
+										onError={(error) => handleTimeError("pickupTime", error)}
 										slotProps={{ textField: { fullWidth: true } }}
 									/>
 								</Box>
@@ -257,6 +289,7 @@ const IntroSection = () => {
 										value={formValues.dropTime}
 										onChange={(val) => handleTimeChange("dropTime", val)}
 										minTime={minDropTime}
+										onError={(error) => handleTimeError("dropTime", error)}
 										slotProps={{ textField: { fullWidth: true } }}
 									/>
 								</Box>
@@ -267,16 +300,7 @@ const IntroSection = () => {
 									variant='contained'
 									color='primary'
 									size='large'
-									disabled={
-										isLoading ||
-										locations.length === 0 ||
-										!formValues.pickupLocation ||
-										!formValues.dropoffLocation ||
-										!formValues.pickupDate ||
-										!formValues.dropDate ||
-										!formValues.pickupTime ||
-										!formValues.dropTime
-									}
+									disabled={isLoading}
 									sx={{
 										py: 1.5,
 										fontFamily: "'Orbitron', sans-serif",

@@ -14,7 +14,7 @@ import {
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import DirectionsIcon from "@mui/icons-material/Directions";
 
-import VideoBackground1 from "../../common/Background1";
+import VideoBackground1 from "../../common/background1";
 import { theme } from "../Config/theme";
 import { useNavigate } from "react-router";
 
@@ -39,25 +39,19 @@ const OurLocationsPage = () => {
 	// Request location every time page loads
 	useEffect(() => {
 		if (navigator.geolocation) {
-			navigator.geolocation.getCurrentPosition(
-				(pos) => {
-					setCurrentPosition([pos.coords.latitude, pos.coords.longitude]);
-				},
-				(err) => console.warn("Geolocation permission denied", err)
-			);
+			navigator.geolocation.getCurrentPosition((pos) => {
+				setCurrentPosition([pos.coords.latitude, pos.coords.longitude]);
+			});
 		}
 	}, []);
 
 	const getCurrentLocation = () => {
 		if (navigator.geolocation) {
-			navigator.geolocation.getCurrentPosition(
-				(pos) => {
-					const coords = [pos.coords.latitude, pos.coords.longitude];
-					setCurrentPosition(coords);
-					if (mapRef.current) mapRef.current.flyTo(coords, 13);
-				},
-				(err) => console.warn("Geolocation not available", err)
-			);
+			navigator.geolocation.getCurrentPosition((pos) => {
+				const coords = [pos.coords.latitude, pos.coords.longitude];
+				setCurrentPosition(coords);
+				if (mapRef.current) mapRef.current.flyTo(coords, 13);
+			});
 		}
 	};
 
