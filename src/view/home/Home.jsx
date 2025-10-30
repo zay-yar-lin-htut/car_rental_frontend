@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-	ThemeProvider,
 	Box,
 	Typography,
 	Button,
@@ -30,9 +29,9 @@ import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
 import { createDataServices } from "../../services/DataServices";
 import { useSnackbar } from "../../contexts/ErrorMessage";
 import { useUserRole } from "../../contexts/userRoleContext";
-import FooterSection from "./Components/FooterSection";
+import FooterSection from "./components/FooterSection";
 import { getNavLinks } from "./Config/navigationConfig";
-import { theme } from "./Config/theme";
+
 import IntroSection from "./Components/IntroSection";
 import HighlightsSection from "./Components/HighlightsSection";
 import OurOffersSection from "./Components/OurOffersSection";
@@ -112,56 +111,54 @@ const CamaroShowcaseHome = () => {
 	};
 
 	return (
-		<ThemeProvider theme={theme}>
-			<Box
+		<Box
+			sx={{
+				bgcolor: "var(--background-color)",
+				color: "var(--text-color)",
+				overflowX: "hidden",
+			}}>
+			<TopAppBar
+				navLinks={navLinks}
+				isLogin={isLogin}
+				handleLogout={handleLogout}
+				isLogouting={logouting}
+				setIsMenuOpen={setIsMenuOpen}
+			/>
+			<MobileDrawer
+				navLinks={navLinks}
+				isMenuOpen={isMenuOpen}
+				onMenuClose={() => setIsMenuOpen(false)}
+				isLogin={isLogin}
+				handleLogout={handleLogout}
+				isLogouting={logouting}
+			/>
+
+			{/* <HeroSection /> */}
+			<IntroSection />
+			<HighlightsSection
+				highlightsData={highlightsData}
+				isLoading={isLoadingHighlights}
+			/>
+			<OurOffersSection />
+			<FooterSection />
+
+			<Fab
+				color='primary'
+				size='large'
+				aria-label='scroll back to top'
+				onClick={scrollTop}
 				sx={{
-					bgcolor: "background.default",
-					color: "text.primary",
-					overflowX: "hidden",
+					position: "fixed",
+					bottom: 32,
+					right: 32,
+					opacity: showScroll ? 1 : 0,
+					transform: showScroll ? "scale(1)" : "scale(0)",
+					transition: "opacity 0.3s, transform 0.3s",
+					zIndex: 100,
 				}}>
-				<TopAppBar
-					navLinks={navLinks}
-					isLogin={isLogin}
-					handleLogout={handleLogout}
-					isLogouting={logouting}
-					setIsMenuOpen={setIsMenuOpen}
-				/>
-				<MobileDrawer
-					navLinks={navLinks}
-					isMenuOpen={isMenuOpen}
-					onMenuClose={() => setIsMenuOpen(false)}
-					isLogin={isLogin}
-					handleLogout={handleLogout}
-					isLogouting={logouting}
-				/>
-
-				{/* <HeroSection /> */}
-				<IntroSection />
-				<HighlightsSection
-					highlightsData={highlightsData}
-					isLoading={isLoadingHighlights}
-				/>
-				<OurOffersSection />
-				<FooterSection />
-
-				<Fab
-					color='secondary'
-					size='large'
-					aria-label='scroll back to top'
-					onClick={scrollTop}
-					sx={{
-						position: "fixed",
-						bottom: 32,
-						right: 32,
-						opacity: showScroll ? 1 : 0,
-						transform: showScroll ? "scale(1)" : "scale(0)",
-						transition: "opacity 0.3s, transform 0.3s",
-						zIndex: 100,
-					}}>
-					<KeyboardArrowUpIcon />
-				</Fab>
-			</Box>
-		</ThemeProvider>
+				<KeyboardArrowUpIcon />
+			</Fab>
+		</Box>
 	);
 };
 
@@ -190,8 +187,8 @@ const TopAppBar = ({
 			sx={{
 				py: 1,
 				zIndex: 10000,
-				backgroundColor: scrolled ? "rgba(13, 27, 42, 0.9)" : "transparent",
-				color: "text.primary",
+				backgroundColor: scrolled ? "rgba(30, 30, 30, 0.9)" : "transparent",
+				color: scrolled ? "var(--text-color)" : "var(--background-color)",
 				px: { xs: 2, md: 4 },
 				backdropFilter: scrolled ? "blur(10px)" : "none",
 				transition:
@@ -220,7 +217,7 @@ const TopAppBar = ({
 							key={link.label}
 							to={link.to}
 							style={{ textDecoration: "none" }}>
-							<Typography sx={{ "&:hover": { color: "primary.main" } }}>
+							<Typography sx={{ "&:hover": { color: "var(--text-color)" } }}>
 								{link.label}
 							</Typography>
 						</Link>
@@ -229,13 +226,21 @@ const TopAppBar = ({
 				<Box sx={{ display: { xs: "none", md: "block" } }}>
 					{isLogin ? (
 						<Button
-							variant='outlined'
+							sx={{
+								color: scrolled
+									? "var(--text-color)"
+									: "var(--background-color)",
+							}}
 							onClick={handleLogout}>
 							{isLogouting ? "Logging Out..." : "Sign Out"}
 						</Button>
 					) : (
 						<Button
-							variant='outlined'
+							sx={{
+								color: scrolled
+									? "var(--text-color)"
+									: "var(--background-color)",
+							}}
 							component={Link}
 							to='/login'>
 							Sign In

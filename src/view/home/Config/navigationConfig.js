@@ -9,14 +9,14 @@ const loggedOutLinks = [
 const userLinks = [
     ...baseLinks,
     { to: "/cars", label: "Models" },
-    { to: "/innovation", label: "Innovation" },
+    // { to: "/innovation", label: "Innovation" },
     { to: "/user-profile", label: "Profile" },
 ];
 
 const adminLinks = [
     ...baseLinks,
-    { to: "/dashboard", label: "Dashboard" },
-    { to: "/admin-panel", label: "Admin Panel" },
+    { to: "/user-management", label: "User Management" },
+    // { to: "/admin-pane", label: "Admin Panel" },
     { to: "/user-profile", label: "Profile" },
 ];
 

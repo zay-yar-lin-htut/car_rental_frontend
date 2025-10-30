@@ -115,8 +115,8 @@ const ModernUserProfile = () => {
                         ...slideInLeft,
                         flexGrow: 1,
                         flexBasis: { xs: "auto", md: "30%" },
-                        bgcolor: "#111",
-                        color: "common.white",
+                        bgcolor: "var(--background-paper)",
+                        color: "var(--text-color)",
                         display: {md:"flex", xs: "none"},
                         flexDirection: "column",
                         justifyContent: "space-between",
@@ -137,7 +137,7 @@ const ModernUserProfile = () => {
                             startIcon={<ArrowBackIcon />}
                             onClick={() => navigate("/")}
                             sx={{
-                                color: "white",
+                                color: "var(--text-color)",
                                 textTransform: "none",
                                 fontSize: "1rem",
                                 "&:hover": {
@@ -155,7 +155,7 @@ const ModernUserProfile = () => {
                         ...slideInRight,
                         flexGrow: 1,
                         flexBasis: { xs: "auto", md: "70%" },
-                        bgcolor: "common.white",
+                        bgcolor: "var(--background-color)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -170,7 +170,7 @@ const ModernUserProfile = () => {
                         startIcon={<ArrowBackIcon />}
                         onClick={() => navigate("/")}
                         sx={{
-                            color: "black",
+                            color: "var(--text-color)",
                             textTransform: "none",
                             fontSize: "1rem",
                             position: "fixed",
@@ -190,13 +190,13 @@ const ModernUserProfile = () => {
                             variant='h2'
                             component='h1'
                             fontWeight={900}
-                            sx={{ mb: 2, lineHeight: 1.1, color: "black" }}>
+                            sx={{ mb: 2, lineHeight: 1.1, color: "var(--text-color)" }}>
                             {user.name}
                         </Typography>
 
                         <Stack
                             spacing={5}
-                            sx={{ my: 10, color: "text.secondary" }}>
+                            sx={{ my: 10, color: "var(--text-secondary-color)" }}>
                             <DetailRow
                                 label='Email'
                                 value={user.email}
@@ -215,14 +215,14 @@ const ModernUserProfile = () => {
                             startIcon={<Edit />}
                             onClick={handleOpenDialog}
                             sx={{
-                                color: "common.black",
-                                borderColor: "grey.400",
+                                color: "var(--text-color)",
+                                borderColor: "var(--divider-color)",
                                 borderRadius: "50px",
                                 px: 3,
                                 py: 1,
                                 "&:hover": {
-                                    bgcolor: "grey.100",
-                                    borderColor: "common.black",
+                                    bgcolor: "rgba(255, 255, 255, 0.1)",
+                                    borderColor: "var(--text-color)",
                                 },
                             }}>
                             Edit Profile

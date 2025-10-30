@@ -34,12 +34,13 @@ const MapUpdater = ({ currentPosition, selectedLocation, showRoute }) => {
 		});
 
 		if (showRoute && currentPosition && selectedLocation) {
+			const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color');
 			L.Routing.control({
 				waypoints: [
 					L.latLng(currentPosition[0], currentPosition[1]),
 					L.latLng(selectedLocation.position[0], selectedLocation.position[1]),
 				],
-				lineOptions: { styles: [{ color: "#00F5D4", weight: 5 }] },
+				lineOptions: { styles: [{ color: primaryColor || '#ff9800', weight: 5 }] },
 				addWaypoints: false,
 				draggableWaypoints: false,
 				createMarker: () => null,

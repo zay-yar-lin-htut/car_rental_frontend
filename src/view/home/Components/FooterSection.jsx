@@ -44,12 +44,6 @@ const FooterSection = () => {
 	const locations = useMemo(
 		() => [
 			{
-				id: 1,
-				office_name: "Mandalay Office",
-				latitude: 21.869075,
-				longitude: 96.105194,
-			},
-			{
 				id: 2,
 				office_name: "Yangon Office",
 				latitude: 16.930086,
@@ -74,8 +68,8 @@ const FooterSection = () => {
 		<Box // Main footer container
 			component='footer'
 			sx={{
-				backgroundColor: "#0D1B2A", // Dark blue background
-				color: "grey.400",
+				backgroundColor: "var(--background-paper)", // Dark blue background
+				color: "var(--text-secondary-color)",
 				py: { xs: 6, md: 8 },
 			}}>
 			<Container maxWidth='lg'>
@@ -93,7 +87,7 @@ const FooterSection = () => {
 							sx={{
 								fontWeight: "bold",
 								fontFamily: "'Orbitron', sans-serif",
-								color: "common.white",
+								color: "var(--text-color)",
 								mb: 2,
 							}}>
 							JOURNEY WHEEL
@@ -134,7 +128,7 @@ const FooterSection = () => {
 					<Box sx={{ width: { xs: "100%", md: "25%" } }}>
 						<Typography
 							variant='h6'
-							sx={{ fontWeight: "bold", color: "common.white", mb: 2 }}>
+							sx={{ fontWeight: "bold", color: "var(--text-color)", mb: 2 }}>
 							Contact Us
 						</Typography>
 						<Box
@@ -161,7 +155,7 @@ const FooterSection = () => {
 					<Box sx={{ width: { xs: "100%", md: "50%" } }}>
 						<Typography
 							variant='h6'
-							sx={{ fontWeight: "bold", color: "common.white", mb: 2 }}>
+							sx={{ fontWeight: "bold", color: "var(--text-color)", mb: 2 }}>
 							Our Locations
 						</Typography>
 						<Paper
@@ -196,16 +190,16 @@ const FooterSection = () => {
 										display: "flex",
 										alignItems: "center",
 										justifyContent: "center",
-										backgroundColor: "grey.900",
+										backgroundColor: "var(--background-color)",
 									}}>
-									<Typography color='grey.600'>Loading map...</Typography>
+									<Typography color='var(--text-secondary-color)'>Loading map...</Typography>
 								</Box>
 							)}
 						</Paper>
 					</Box>
 				</Box>
 
-				<Divider sx={{ my: 4, borderColor: "rgba(255, 255, 255, 0.1)" }} />
+				<Divider sx={{ my: 4, borderColor: "var(--divider-color)" }} />
 
 				<Box
 					sx={{
@@ -213,7 +207,7 @@ const FooterSection = () => {
 					}}>
 					<Typography
 						variant='body2'
-						color='grey.500'>
+						color='var(--text-secondary-color)'>
 						© {new Date().getFullYear()} Journey Wheel. All Rights Reserved.
 					</Typography>
 				</Box>

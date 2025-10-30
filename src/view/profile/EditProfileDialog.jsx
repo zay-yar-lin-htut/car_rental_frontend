@@ -128,7 +128,13 @@ export const EditProfileDialog = ({
 			open={open}
 			onClose={handleClose}
 			maxWidth='sm'
-			fullWidth>
+			fullWidth
+			PaperProps={{
+				sx: {
+					bgcolor: "var(--background-paper)",
+					color: "var(--text-color)"
+				}
+			}}>
 			<DialogTitle sx={{ fontWeight: "bold" }}>Edit Your Profile</DialogTitle>
 			<DialogContent
 				sx={{
@@ -155,7 +161,7 @@ export const EditProfileDialog = ({
 								borderRadius: 4,
 								objectFit: "cover",
 								border: "3px solid",
-								borderColor: "divider",
+								borderColor: "var(--divider-color)",
 							}}
 						/>
 					</Box>

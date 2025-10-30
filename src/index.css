@@ -1,11 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --primary-color: #ff9800;
-  /* orange accent */
-  --background-color: #121212;
-  /* Dark background */
-  --text-color: #ffffff;
+  --primary-color: #ff9800; /* orange accent */
+  --primary-contrast-text: #000000; /* Black for high contrast on orange */
+
+  --background-color: #121212; /* Dark background */
+  --background-paper: #1e1e1e; /* Slightly lighter dark for paper surfaces */
+
+  --text-color: #ffffff; /* White text */
+  --text-secondary-color: #b0b0b0; /* Light grey for secondary text */
+
+  --divider-color: #424242; /* Grey for dividers */
+
   --font-family: "Roboto", "Helvetica", "Arial", sans-serif;
 }
 

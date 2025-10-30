@@ -10,7 +10,7 @@ const Cars = () => {
 				display: "flex",
 				alignItems: "center",
 				justifyContent: "center",
-				background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+				backgroundColor: "var(--background-color)",
 			}}>
 			<Container
 				maxWidth='md'
@@ -19,12 +19,12 @@ const Cars = () => {
 					variant='h2'
 					component='h1'
 					gutterBottom
-					sx={{ fontWeight: "bold", color: "primary.dark" }}>
+					sx={{ fontWeight: "bold", color: "var(--primary-color)" }}>
 					Our Models
 				</Typography>
 				<Typography
 					variant='h5'
-					color='text.secondary'
+					color='var(--text-secondary-color)'
 					paragraph>
 					Welcome to the models page. Content is under construction.
 				</Typography>

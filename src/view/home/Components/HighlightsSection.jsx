@@ -34,12 +34,12 @@ const Arrow = React.memo((props) => {
 					? { left: { xs: -50, md: -100 } }
 					: { right: { xs: -50, md: -100 } }),
 				zIndex: 2,
-				bgcolor: "background.paper",
-				color: "text.primary",
+				bgcolor: "var(--background-paper)",
+				color: "var(--text-color)",
 				boxShadow: 3,
 				"&:hover": {
-					bgcolor: "primary.main",
-					color: "primary.contrastText",
+					bgcolor: "var(--primary-color)",
+					color: "var(--primary-contrast-text)",
 				},
 			}}>
 			{direction === "left" ? <ArrowBackIosNewIcon /> : <ArrowForwardIosIcon />}
@@ -82,7 +82,7 @@ const HighlightCard = React.memo(({ item, dataServices }) => {
 		<Box sx={{ px: 2, outline: "none" }}>
 			<Card
 				sx={{
-					bgcolor: "background.paper",
+					bgcolor: "var(--background-paper)",
 					borderRadius: 3,
 					overflow: "hidden",
 					display: "flex",
@@ -137,13 +137,13 @@ const HighlightCard = React.memo(({ item, dataServices }) => {
 						sx={{
 							fontSize: { xs: "1.2rem", md: "1.5rem" },
 							fontFamily: "'Orbitron', sans-serif",
-							color: "text.primary",
+							color: "var(--text-color)",
 							mb: 1,
 						}}>
 						{item.type_name}
 					</Typography>
 					<Typography
-						color='text.secondary'
+						color='var(--text-secondary-color)'
 						sx={{
 							fontSize: { xs: "0.8rem", md: "1rem" },
 						}}>
@@ -155,8 +155,50 @@ const HighlightCard = React.memo(({ item, dataServices }) => {
 	);
 });
 
-const HighlightsSection = ({ highlightsData = [] }) => {
+const HighlightsSection = ({ highlightsData = [], isLoading }) => {
 	const dataServices = useMemo(() => createDataServices(), []);
+
+	if (isLoading) {
+		return (
+			<Box sx={{ py: { xs: 8, md: 12 }, bgcolor: "var(--background-color)" }}>
+				<Container maxWidth='lg'>
+					<Typography
+						variant='h3'
+						component='h2'
+						fontWeight={800}
+						textAlign='center'
+						gutterBottom
+						sx={{
+							fontFamily: "'Orbitron', sans-serif",
+							mb: 6,
+							color: "var(--text-color)",
+						}}>
+						Meet Your Fleet
+					</Typography>
+					<Box
+						sx={{
+							display: "flex",
+							flexDirection: { xs: "column", sm: "row" },
+							gap: 4,
+						}}
+						justifyContent='center'
+						alignItems='center'>
+						{Array.from(new Array(3)).map((_, index) => (
+							<Skeleton
+								key={index}
+								variant='rectangular'
+								height={350}
+								sx={{
+									borderRadius: 3,
+									width: { xs: "90%", sm: "60%", md: "33%" },
+								}}
+							/>
+						))}
+					</Box>
+				</Container>
+			</Box>
+		);
+	}
 
 	if (!highlightsData || highlightsData.length === 0) {
 		// Render nothing if there's no data and we are not loading
@@ -164,7 +206,7 @@ const HighlightsSection = ({ highlightsData = [] }) => {
 	}
 
 	return (
-		<Box sx={{ py: { xs: 8, md: 12 }, bgcolor: "background.default" }}>
+		<Box sx={{ py: { xs: 8, md: 12 }, bgcolor: "var(--background-color)" }}>
 			<Container maxWidth='lg'>
 				<Typography
 					variant='h3'
@@ -175,7 +217,7 @@ const HighlightsSection = ({ highlightsData = [] }) => {
 					sx={{
 						fontFamily: "'Orbitron', sans-serif",
 						mb: 6,
-						color: "text.primary",
+						color: "var(--text-color)",
 					}}>
 					Meet Your Fleet
 				</Typography>

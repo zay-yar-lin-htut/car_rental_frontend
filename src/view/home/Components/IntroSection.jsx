@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
-import VideoBackground1 from "../../common/Background1";
+import VideoBackground1 from "../../common/background1";
 import { useNavigate } from "react-router";
 import { useIntroForm } from "../../../contexts/IntroFormProvider";
 import LocationSelector from "../../common/LocationSelector";
@@ -169,20 +169,17 @@ const IntroSection = () => {
 			<VideoBackground1 videoSrc='/bg-2.mp4' />
 
 			<Box sx={{ zIndex: 2, width: "100%", maxWidth: 600 }}>
-				<Paper
-					elevation={12}
-					sx={{
-						p: { xs: 3, md: 4 },
-						bgcolor: "background.paper",
-						borderRadius: 4,
-						border: "1px solid rgba(255, 255, 255, 0.12)",
-					}}>
+				<div className='bg-gray-300 p-8 rounded-lg bg-opacity-30'>
 					<Typography
 						variant='h4'
 						fontWeight={800}
 						textAlign='center'
 						gutterBottom
-						sx={{ fontFamily: "'Orbitron', sans-serif", mb: 4 }}>
+						sx={{
+							fontFamily: "'Orbitron', sans-serif",
+							mb: 4,
+							color: "var(--background-color)",
+						}}>
 						Find Your Perfect Ride
 					</Typography>
 
@@ -200,11 +197,10 @@ const IntroSection = () => {
 								variant='outlined'
 								disabled
 								fullWidth
-								sx={{ color: "white" }}
 								InputProps={{
 									endAdornment: (
 										<CircularProgress
-											color='white'
+											color='inherit'
 											size={20}
 										/>
 									),
@@ -231,14 +227,16 @@ const IntroSection = () => {
 									}
 									label={
 										<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-											Drop off at the same location
+											<p className='text-black'>
+												Drop off at the same location
+											</p>
 											<Typography
 												component='button'
 												onClick={() => {
 													navigate("/our-locations");
 												}}
 												sx={{
-													color: "primary.main",
+													color: "var(--primary-color)",
 													cursor: "pointer",
 													textDecoration: "underline",
 												}}>
@@ -273,6 +271,7 @@ const IntroSection = () => {
 										minTime={minPickupTime}
 										onError={(error) => handleTimeError("pickupTime", error)}
 										slotProps={{ textField: { fullWidth: true } }}
+										sx={{}}
 									/>
 								</Box>
 
@@ -312,7 +311,7 @@ const IntroSection = () => {
 							</>
 						)}
 					</Box>
-				</Paper>
+				</div>
 			</Box>
 		</Box>
 	);

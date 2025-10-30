@@ -8,16 +8,15 @@ import { AUTH_CONFIG } from "./services/Configuration";
 import { SnackbarProvider } from "./contexts/ErrorMessage";
 import { UserRoleProvider, useUserRole } from "./contexts/userRoleContext";
 import { IntroFormProvider } from "./contexts/IntroFormProvider";
+import UserManagement from "./view/admin/components/UserManagement";
+import CarManagement from "./view/admin/components/CarManagement";
 
 const Home = lazy(() => import("./view/home/Home"));
 const Login = lazy(() => import("./view/login/Login"));
-const Pricing = lazy(() => import("./view/pricing/Pricing"));
 const Register = lazy(() => import("./view/login/Register"));
 const UserProfile = lazy(() => import("./view/profile/UserProfile"));
 const Cars = lazy(() => import("./view/cars/Cars"));
 const AdminLayout = lazy(() => import("./view/admin/AdminLayout"));
-const Dashboard = lazy(() => import("./view/admin/Dashboard"));
-const AdminPanel = lazy(() => import("./view/admin/AdminPanel"));
 const OurLocationsPage = lazy(() =>
 	import("./view/home/Components/OurLocation")
 );
@@ -116,14 +115,6 @@ const router = createBrowserRouter([
 		),
 	},
 	{
-		path: "/innovation",
-		element: (
-			<ProtectedRoute>
-				<Pricing />
-			</ProtectedRoute>
-		),
-	},
-	{
 		path: "/user-profile",
 		element: (
 			<ProtectedRoute>
@@ -152,16 +143,28 @@ const router = createBrowserRouter([
 		),
 		children: [
 			{
-				path: "/dashboard",
-				element: <Dashboard />,
-			},
-			{
-				path: "/admin-panel",
-				element: <AdminPanel />,
-			},
-			{
 				path: "/user-profile",
 				element: <UserProfile />,
+			},
+			{
+				path: "/user-management",
+				element: <UserManagement />,
+			},
+			{
+				path: "/car-management",
+				element: <CarManagement />,
+			},
+			{
+				path: "/contact-management",
+				element: <UserProfile />,
+			},
+			{
+				path: "/task-management",
+				element: <UserProfile />,
+			},
+			{
+				path: "/our-locations",
+				element: <OurLocationsPage />,
 			},
 		],
 	},

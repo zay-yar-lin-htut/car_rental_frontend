@@ -7,15 +7,14 @@ import {
 	ListItemText,
 	ListItemButton,
 	Button,
-	ThemeProvider,
 	IconButton,
 	Tooltip,
 } from "@mui/material";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import DirectionsIcon from "@mui/icons-material/Directions";
 
-import VideoBackground1 from "../../common/Background1";
-import { theme } from "../Config/theme";
+import VideoBackground1 from "../../common/background1";
+
 import { useNavigate } from "react-router";
 
 const Map = lazy(() => import("./Map"));
@@ -56,7 +55,6 @@ const OurLocationsPage = () => {
 	};
 
 	return (
-		<ThemeProvider theme={theme}>
 			<Box sx={{ position: "relative", width: "100%", height: "100vh" }}>
 				<VideoBackground1 videoSrc='/bg-2.mp4' />
 
@@ -82,14 +80,14 @@ const OurLocationsPage = () => {
 						height: { xs: "40%", md: "80%" },
 						display: "flex",
 						flexDirection: "column",
-						bgcolor: "background.paper",
+						bgcolor: "var(--background-paper)",
 						borderRadius: { xs: "20px 20px 0 0", md: 4 },
 						border: "1px solid rgba(255,255,255,0.12)",
 						zIndex: 1000,
 						overflow: "hidden",
 						pointerEvents: "auto",
 					}}>
-					<Box sx={{ p: 3, borderBottom: "1px solid", borderColor: "divider" }}>
+					<Box sx={{ p: 3, borderBottom: "1px solid", borderColor: "var(--divider-color)" }}>
 						<Typography
 							variant='h5'
 							fontWeight={800}
@@ -114,7 +112,7 @@ const OurLocationsPage = () => {
 						</List>
 					</Box>
 
-					<Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider" }}>
+					<Box sx={{ p: 2, borderTop: "1px solid", borderColor: "var(--divider-color)" }}>
 						<Button
 							variant='contained'
 							color='primary'
@@ -145,7 +143,7 @@ const OurLocationsPage = () => {
 					<Tooltip title='Get Current Location'>
 						<IconButton
 							color='primary'
-							sx={{ bgcolor: "white" }}
+							sx={{ bgcolor: "var(--background-paper)" }}
 							onClick={getCurrentLocation}>
 							<MyLocationIcon />
 						</IconButton>
@@ -154,7 +152,7 @@ const OurLocationsPage = () => {
 					<Tooltip title='Show Directions'>
 						<IconButton
 							color='primary'
-							sx={{ bgcolor: "white" }}
+							sx={{ bgcolor: "var(--background-paper)" }}
 							onClick={() => setShowRoute(true)}
 							disabled={!currentPosition}>
 							<DirectionsIcon />
@@ -162,7 +160,6 @@ const OurLocationsPage = () => {
 					</Tooltip>
 				</Box>
 			</Box>
-		</ThemeProvider>
 	);
 };
 

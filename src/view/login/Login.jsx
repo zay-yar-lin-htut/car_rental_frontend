@@ -20,7 +20,7 @@ import GoogleIcon from "@mui/icons-material/Google";
 import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
 import { createDataServices } from "../../services/DataServices";
 import { useSnackbar } from "../../contexts/ErrorMessage";
-import VideoBackground1 from "../common/Background1";
+import VideoBackground1 from "../common/background1";
 
 
 const dataServices = createDataServices();

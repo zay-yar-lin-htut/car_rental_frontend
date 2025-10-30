@@ -33,7 +33,7 @@ const offers = [
 ];
 const OurOffersSection = () => {
 	return (
-		<Box sx={{ py: { xs: 8, md: 12 }, bgcolor: "background.paper" }}>
+		<Box sx={{ py: { xs: 8, md: 12 }, bgcolor: "var(--background-paper)" }}>
 			<Container maxWidth='lg'>
 				<Typography
 					variant='h3'
@@ -44,7 +44,7 @@ const OurOffersSection = () => {
 					sx={{
 						fontFamily: "'Orbitron', sans-serif",
 						mb: 6,
-						color: "text.primary",
+						color: "var(--text-color)",
 					}}>
 					What We Offer
 				</Typography>
@@ -53,20 +53,20 @@ const OurOffersSection = () => {
 						display: "flex",
 						flexWrap: "wrap",
 						gap: 4,
-						justifyContent: "center",
+						justifyContent: "flex-start",
 					}}>
 					{offers.map((offer) => (
 						<Paper
 							key={offer.id}
 							elevation={3}
 							component={Box}
-							data-aos='fade-up'
+							// data-aos='fade-up'
 							data-aos-delay={(offer.id - 1) * 150}
 							sx={{
 								display: "flex",
 								flexDirection: { xs: "column", sm: "row" },
 								alignItems: "center",
-								width: { xs: "100%", md: "calc(50% - 20px)" }, // Adjusted for new gap
+								width: { xs: "100%", md: "calc(50% - 16px)" }, // Adjusted for 2 columns with gap
 								p: 3, // Increased padding for a bigger card feel
 								borderRadius: 3,
 								overflow: "hidden",
@@ -75,6 +75,7 @@ const OurOffersSection = () => {
 									transform: "translateY(-8px)",
 									boxShadow: 6,
 								},
+								bgcolor: "var(--background-color)",
 							}}>
 							<CardMedia
 								component='img'
@@ -99,17 +100,19 @@ const OurOffersSection = () => {
 									<Typography
 										variant='h5' // Larger title
 										fontWeight='bold'
+										color='var(--text-color)'
 										gutterBottom>
 										{offer.title}
 									</Typography>
 									<Typography
 										variant='body1'
-										color='text.secondary'>
+										color='var(--text-secondary-color)'>
 										{offer.description}
 									</Typography>
 								</Box>
 								<Button
 									variant='contained'
+									color='primary'
 									sx={{ mt: 2, alignSelf: "flex-start" }}>
 									Learn More
 								</Button>

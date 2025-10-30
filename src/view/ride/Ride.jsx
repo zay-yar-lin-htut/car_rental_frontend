@@ -21,6 +21,7 @@ import {
 	Pagination,
 	Fab,
 	Zoom,
+	useTheme,
 } from "@mui/material";
 import clsx from "clsx";
 import { useNavigate } from "react-router";
@@ -42,6 +43,7 @@ import InputLabel from "@mui/material/InputLabel";
 import BookingLayout from "./BookingLayout";
 
 const Ride = () => {
+	const theme = useTheme();
 	const dataServices = () => createDataServices();
 	const { formValues, setFormValues, isLoading, setIsLoading } = useIntroForm();
 	const [isReviewing, setIsReviewing] = useState(false);
@@ -103,9 +105,33 @@ const Ride = () => {
 	const fetchVehicles = async () => {
 		setIsVehiclesLoading(true);
 		try {
+			const pickupDateTime = formValues.pickupDate
+				? new Date(formValues.pickupDate)
+						.toISOString()
+						.slice(0, 19)
+						.replace("T", " ")
+				: "";
+			const dropoffDateTime = formValues.dropDate
+				? new Date(formValues.dropDate)
+						.toISOString()
+						.slice(0, 19)
+						.replace("T", " ")
+				: "";
+
+			const params = new URLSearchParams({
+				first: page,
+				max: max,
+				asc_total: asc,
+				pickup_datetime: pickupDateTime,
+				dropoff_datetime: dropoffDateTime,
+				car_type_id: carTypeId,
+				fuel_type: fuelType,
+			});
+			console.log("params", params);
+
 			const response = await dataServices().retrieve(
 				API_ENDPOINTS.cars.base,
-				`${API_ENDPOINTS.cars.getAll}?first=${page}&max=${max}&asc=${asc}&car_type_id=${carTypeId}&fuel_type=${fuelType}`
+				`${API_ENDPOINTS.cars.getAll}?${params.toString()}`
 			);
 			setVehicles(response.data.cars);
 			setTotalPages(Math.ceil(response.data.totalCars / max));
@@ -118,8 +144,8 @@ const Ride = () => {
 
 	useEffect(() => {
 		fetchVehicles();
-		// This effect should re-run when any of these dependencies change.
-	}, [page, asc, fuelType, carTypeId]);
+		// This effect should re-run when any of these dependencies change. We don't add formValues to avoid extra calls.
+	}, [page, max, asc, fuelType, carTypeId]);
 
 	const handleFuelTypeChange = (e) => {
 		setFuelType(e.target.value);
@@ -158,27 +184,13 @@ const Ride = () => {
 						variant='h6'
 						component='span'
 						sx={{ fontWeight: 600 }}>
-						{vehicle.price_per_day.toLocaleString()}
+						{vehicle.total_price.toLocaleString()}
 					</Typography>
 					<Typography
 						variant='body2'
 						component='span'
 						color='text.secondary'>
-						{" MMK/day"}
-					</Typography>
-				</Box>
-				<Box>
-					<Typography
-						variant='subtitle1'
-						component='span'
-						sx={{ fontWeight: 500 }}>
-						{vehicle.price_per_hour.toLocaleString()}
-					</Typography>
-					<Typography
-						variant='caption'
-						component='span'
-						color='text.secondary'>
-						{" MMK/hour"}
+						{" MMK  total"}
 					</Typography>
 				</Box>
 			</Box>
@@ -267,8 +279,10 @@ const Ride = () => {
 				</Box>
 				<Button
 					onClick={() => {
+						setPage(1);
 						setAsc(!asc);
-					}}>
+					}}
+					variant='contained'>
 					{asc ? "Price: Low to High" : "Price: High to Low"}
 				</Button>
 			</Box>
@@ -346,8 +360,9 @@ const Ride = () => {
 								display: "flex",
 								flexDirection: { xs: "column", sm: "row" },
 								p: { xs: 2, sm: 3 },
+								bgcolor: "background.paper",
 								borderRadius: 3,
-								boxShadow: "0px 2px 10px rgba(0,0,0,0.1)",
+								boxShadow: `0px 4px 12px ${theme.palette.primary.main}1A`,
 								transition: "transform 0.2s ease",
 								"&:hover": { transform: "scale(1.01)" },
 								width: "100%",
@@ -378,16 +393,22 @@ const Ride = () => {
 									justifyContent: "space-around",
 								}}>
 								<Typography
-									variant='h6' // Stays h6 for semantics
+									variant='h6'
 									fontSize={{ xs: "1.1rem", sm: "1.25rem" }} // Responsive font size
 									sx={{ fontWeight: 600 }}>
+									{vehicle.model || "Renault Captur or similar"}
+								</Typography>
+								<Typography
+									color='text.secondary'
+									sx={{ mb: 1 }}
+									variant='body2'>
 									{vehicle.car_type}
 								</Typography>
 								<Typography
-									variant='body2'
 									color='text.secondary'
-									sx={{ mb: 1 }}>
-									{vehicle.model || "Renault Captur or similar"}
+									sx={{ mb: 1 }}
+									variant='body2'>
+									{vehicle.description}
 								</Typography>
 
 								<Box
@@ -445,7 +466,7 @@ const Ride = () => {
 								{renderCostCalculation(vehicle)}
 								<Button
 									variant='contained'
-									color='success'
+									color='primary'
 									sx={{
 										textTransform: "none",
 										borderRadius: 3,
@@ -462,7 +483,7 @@ const Ride = () => {
 			) : (
 				<Typography
 					align='center'
-					sx={{ my: 4 }}>
+					sx={{ my: 4, color: "text.secondary" }}>
 					No vehicles found matching your criteria.
 				</Typography>
 			)}

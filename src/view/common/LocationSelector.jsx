@@ -1,6 +1,7 @@
 import React from "react";
 import { TextField, MenuItem, InputAdornment } from "@mui/material";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
+import { customTextFieldStyle } from "./customTextFieldStyle";
 
 const LocationSelector = ({
 	locations,

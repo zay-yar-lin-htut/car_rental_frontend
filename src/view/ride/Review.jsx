@@ -14,6 +14,7 @@ import {
 	CardContent,
 	Skeleton,
 	CircularProgress,
+	useTheme,
 } from "@mui/material";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -44,7 +45,7 @@ const RecenterAutomatically = ({ bounds }) => {
 
 const Review = ({ onBackToSelect }) => {
 	const { formValues, resetForm } = useIntroForm();
-
+	const theme = useTheme();
 	const { showSnackbar } = useSnackbar();
 	const [isConfirming, setIsConfirming] = useState(false);
 	const navigate = useNavigate();
@@ -130,7 +131,7 @@ const Review = ({ onBackToSelect }) => {
 				{/* Left column - rental details */}
 				<Paper
 					variant='outlined'
-					sx={{ p: 3, mb: 3 }}>
+					sx={{ p: 3, mb: 3, bgcolor: "background.paper" }}>
 					<Typography
 						variant='h6'
 						fontWeight='bold'
@@ -139,7 +140,11 @@ const Review = ({ onBackToSelect }) => {
 					</Typography>
 
 					<Box sx={{ mb: 2 }}>
-						<Typography variant='subtitle2'>Dates & Times</Typography>
+						<Typography
+							variant='subtitle2'
+							color='text.secondary'>
+							Dates & Times
+						</Typography>
 						<Typography
 							variant='body2'
 							color='text.secondary'>
@@ -159,7 +164,9 @@ const Review = ({ onBackToSelect }) => {
 					<Divider sx={{ my: 1 }} />
 
 					<Box sx={{ mb: 2 }}>
-						<Typography variant='subtitle2'>
+						<Typography
+							variant='subtitle2'
+							color='text.secondary'>
 							Pick-up & Return Location
 						</Typography>
 						<Typography
@@ -178,7 +185,7 @@ const Review = ({ onBackToSelect }) => {
 				{mapBounds.length === 0 ? (
 					<Paper
 						variant='outlined'
-						sx={{ p: 3, mb: 3 }}>
+						sx={{ p: 3, mb: 3, bgcolor: "background.paper" }}>
 						<Typography
 							variant='h6'
 							fontWeight='bold'
@@ -193,7 +200,7 @@ const Review = ({ onBackToSelect }) => {
 				) : (
 					<Paper
 						variant='outlined'
-						sx={{ p: 3, mb: 3 }}>
+						sx={{ p: 3, mb: 3, bgcolor: "background.paper" }}>
 						<Typography
 							variant='h6'
 							fontWeight='bold'
@@ -238,7 +245,7 @@ const Review = ({ onBackToSelect }) => {
 				{/* Vehicle Details */}
 				<Paper
 					variant='outlined'
-					sx={{ p: 3, mb: 3 }}>
+					sx={{ p: 3, mb: 3, bgcolor: "background.paper" }}>
 					<Typography
 						variant='h6'
 						fontWeight='bold'
@@ -250,7 +257,11 @@ const Review = ({ onBackToSelect }) => {
 							Change
 						</Button>
 					</Typography>
-					<Card variant='outlined'>
+					<Card
+						variant='outlined'
+						sx={{
+							border: `1px solid ${theme.palette.divider}`,
+						}}>
 						<CardMedia
 							component='img'
 							image={dataServices.retrieveImage(
@@ -281,8 +292,8 @@ const Review = ({ onBackToSelect }) => {
 
 				{/* Right column - contact details */}
 				<Paper
-					sx={{ p: 3, mb: 3 }}
-					variant='outlined'>
+					variant='outlined'
+					sx={{ p: 3, mb: 3, bgcolor: "background.paper" }}>
 					<Typography
 						variant='h6'
 						fontWeight='bold'

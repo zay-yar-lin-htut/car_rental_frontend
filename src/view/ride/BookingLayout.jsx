@@ -1,10 +1,18 @@
 import React from "react";
-import { Box, Typography, Paper } from "@mui/material";
+import { Box, Typography, Paper, useTheme } from "@mui/material";
 
 const BookingLayout = ({ title, children }) => {
+	const theme = useTheme();
 	return (
-		<Box sx={{ py: 5, px: 2, bgcolor: "grey.100", minHeight: "100vh" }}>
-			<Paper sx={{ p: { xs: 2, md: 4 }, maxWidth: "lg", mx: "auto" }}>
+		<Box sx={{ py: 5, px: 2, bgcolor: "white", minHeight: "100vh" }}>
+			<Paper
+				sx={{
+					p: { xs: 2, md: 4 },
+					maxWidth: "lg",
+					mx: "auto",
+					borderRadius: 3,
+					boxShadow: "0px 2px 10px rgba(0,0,0,0.1)",
+				}}>
 				{title && (
 					<Typography
 						variant='h4'
