@@ -29,7 +29,7 @@ import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
 import { createDataServices } from "../../services/DataServices";
 import { useSnackbar } from "../../contexts/ErrorMessage";
 import { useUserRole } from "../../contexts/userRoleContext";
-import FooterSection from "./components/FooterSection";
+import FooterSection from "./Components/FooterSection";
 import { getNavLinks } from "./Config/navigationConfig";
 
 import IntroSection from "./Components/IntroSection";

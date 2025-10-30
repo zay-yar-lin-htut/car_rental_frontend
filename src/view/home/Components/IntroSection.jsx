@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
-import VideoBackground1 from "../../common/background1";
+import VideoBackground1 from "../../common/Background1";
 import { useNavigate } from "react-router";
 import { useIntroForm } from "../../../contexts/IntroFormProvider";
 import LocationSelector from "../../common/LocationSelector";

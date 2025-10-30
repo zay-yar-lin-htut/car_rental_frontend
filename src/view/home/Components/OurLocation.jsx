@@ -13,7 +13,7 @@ import {
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import DirectionsIcon from "@mui/icons-material/Directions";
 
-import VideoBackground1 from "../../common/background1";
+import VideoBackground1 from "../../common/Background1";
 
 import { useNavigate } from "react-router";
 
