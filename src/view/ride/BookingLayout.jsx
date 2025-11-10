@@ -1,8 +1,7 @@
 import React from "react";
-import { Box, Typography, Paper, useTheme } from "@mui/material";
+import { Box, Typography, Paper } from "@mui/material";
 
 const BookingLayout = ({ title, children }) => {
-	const theme = useTheme();
 	return (
 		<Box sx={{ py: 5, px: 2, bgcolor: "white", minHeight: "100vh" }}>
 			<Paper

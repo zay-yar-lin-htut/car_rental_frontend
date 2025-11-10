@@ -35,6 +35,7 @@ import { getNavLinks } from "./Config/navigationConfig";
 import IntroSection from "./Components/IntroSection";
 import HighlightsSection from "./Components/HighlightsSection";
 import OurOffersSection from "./Components/OurOffersSection";
+import ContactUs from "../../contactUs/ContactUs";
 const dataServices = createDataServices();
 
 // Simple in-memory cache to hold data across component mounts (e.g., navigation)
@@ -51,7 +52,9 @@ const CamaroShowcaseHome = () => {
 		!highlightsCache
 	);
 	const { role } = useUserRole();
+
 	const isLogin = AUTH_CONFIG.isAuthenticated();
+	const [isContactUsOpen, setContactUsOpen] = useState(false);
 
 	useEffect(() => {
 		AOS.init({ duration: 1000, once: true, offset: 100 });
@@ -91,14 +94,15 @@ const CamaroShowcaseHome = () => {
 
 	const handleLogout = () => {
 		setLogouting(true);
+		AUTH_CONFIG.clearToken();
+		AUTH_CONFIG.clearUserData();
+		navigate("/login");
+
 		dataServices
 			.Logout(API_ENDPOINTS.auth.logout)
 			.then((response) => {
 				setLogouting(false);
-				AUTH_CONFIG.clearToken();
-				AUTH_CONFIG.clearUserData();
-				showSnackbar(response.message, "success");
-				navigate(0);
+				// showSnackbar(response.message, "success");
 			})
 			.catch((error) => {
 				setLogouting(false);
@@ -123,6 +127,7 @@ const CamaroShowcaseHome = () => {
 				handleLogout={handleLogout}
 				isLogouting={logouting}
 				setIsMenuOpen={setIsMenuOpen}
+				setContactUsOpen={setContactUsOpen}
 			/>
 			<MobileDrawer
 				navLinks={navLinks}
@@ -131,6 +136,7 @@ const CamaroShowcaseHome = () => {
 				isLogin={isLogin}
 				handleLogout={handleLogout}
 				isLogouting={logouting}
+				setContactUsOpen={setContactUsOpen}
 			/>
 
 			{/* <HeroSection /> */}
@@ -158,6 +164,10 @@ const CamaroShowcaseHome = () => {
 				}}>
 				<KeyboardArrowUpIcon />
 			</Fab>
+			<ContactUs
+				open={isContactUsOpen}
+				onClose={() => setContactUsOpen(false)}
+			/>
 		</Box>
 	);
 };
@@ -169,6 +179,7 @@ const TopAppBar = ({
 	handleLogout,
 	isLogouting,
 	setIsMenuOpen,
+	setContactUsOpen,
 }) => {
 	const [scrolled, setScrolled] = useState(false);
 
@@ -188,7 +199,7 @@ const TopAppBar = ({
 				py: 1,
 				zIndex: 10000,
 				backgroundColor: scrolled ? "rgba(30, 30, 30, 0.9)" : "transparent",
-				color: scrolled ? "var(--text-color)" : "var(--background-color)",
+				color: "var(--text-color)",
 				px: { xs: 2, md: 4 },
 				backdropFilter: scrolled ? "blur(10px)" : "none",
 				transition:
@@ -212,24 +223,33 @@ const TopAppBar = ({
 						justifyContent: "center",
 						gap: 10,
 					}}>
-					{navLinks.map((link) => (
-						<Link
-							key={link.label}
-							to={link.to}
-							style={{ textDecoration: "none" }}>
-							<Typography sx={{ "&:hover": { color: "var(--text-color)" } }}>
-								{link.label}
-							</Typography>
-						</Link>
-					))}
+					{navLinks.map((link) =>
+						link.label === "Contact Us" ? (
+							<Link
+								key={link.label}
+								onClick={() => setContactUsOpen(true)}
+								style={{ textDecoration: "none" }}>
+								<Typography sx={{ "&:hover": { color: "var(--text-color)" } }}>
+									{link.label}
+								</Typography>
+							</Link>
+						) : (
+							<Link
+								key={link.label}
+								to={link.to}
+								style={{ textDecoration: "none" }}>
+								<Typography sx={{ "&:hover": { color: "var(--text-color)" } }}>
+									{link.label}
+								</Typography>
+							</Link>
+						)
+					)}
 				</Box>
 				<Box sx={{ display: { xs: "none", md: "block" } }}>
 					{isLogin ? (
 						<Button
 							sx={{
-								color: scrolled
-									? "var(--text-color)"
-									: "var(--background-color)",
+								color: "var(--text-color)",
 							}}
 							onClick={handleLogout}>
 							{isLogouting ? "Logging Out..." : "Sign Out"}
@@ -237,9 +257,7 @@ const TopAppBar = ({
 					) : (
 						<Button
 							sx={{
-								color: scrolled
-									? "var(--text-color)"
-									: "var(--background-color)",
+								color: "var(--text-color)",
 							}}
 							component={Link}
 							to='/login'>
@@ -277,6 +295,7 @@ const MobileDrawer = ({
 	isLogin,
 	handleLogout,
 	isLogouting,
+	setContactUsOpen,
 }) => (
 	<Drawer
 		anchor='top'
@@ -302,8 +321,13 @@ const MobileDrawer = ({
 					<React.Fragment key={link.label}>
 						<ListItem
 							button
-							component={Link}
-							to={link.to}>
+							component={link.label === "Contact Us" ? "button" : Link}
+							to={link.to}
+							onClick={
+								link.label === "Contact Us"
+									? () => setContactUsOpen(true)
+									: null
+							}>
 							<ListItemText primary={link.label} />
 						</ListItem>
 						<Divider sx={{ my: 0.3 }} />

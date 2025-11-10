@@ -37,7 +37,6 @@ import WorkIcon from "@mui/icons-material/Work";
 import Divider from "@mui/material/Divider";
 import FlareIcon from "@mui/icons-material/Flare";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import { calculateRentalCost } from "./costCalculator";
 import Review from "./Review";
 import InputLabel from "@mui/material/InputLabel";
 import BookingLayout from "./BookingLayout";
@@ -52,7 +51,7 @@ const Ride = () => {
 	const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
 	const { showSnackbar } = useSnackbar();
 	const [page, setPage] = useState(1);
-	const [max, setMax] = useState(10);
+	const max = 10;
 	const [asc, setAsc] = useState(true);
 	const [totalPages, setTotalPages] = useState(0);
 	const [fuelType, setFuelType] = useState("");
@@ -127,7 +126,6 @@ const Ride = () => {
 				car_type_id: carTypeId,
 				fuel_type: fuelType,
 			});
-			console.log("params", params);
 
 			const response = await dataServices().retrieve(
 				API_ENDPOINTS.cars.base,
@@ -190,7 +188,7 @@ const Ride = () => {
 						variant='body2'
 						component='span'
 						color='text.secondary'>
-						{" MMK  total"}
+						{" USD total"}
 					</Typography>
 				</Box>
 			</Box>
@@ -229,6 +227,8 @@ const Ride = () => {
 	if (isReviewing) {
 		return <Review onBackToSelect={handleBackToSelect} />;
 	}
+	console.log("FormValue", formValues);
+
 	return (
 		<BookingLayout title='Choose Your Vehicle'>
 			<Box

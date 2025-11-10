@@ -9,23 +9,77 @@ import {
 	Checkbox,
 	CircularProgress,
 } from "@mui/material";
-
+import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import VideoBackground1 from "../../common/Background1";
 import { useNavigate } from "react-router";
 import { useIntroForm } from "../../../contexts/IntroFormProvider";
-import LocationSelector from "../../common/LocationSelector";
-import FutureDatePicker from "../../common/FutureDatePicker";
 import dayjs from "dayjs";
 import { createDataServices } from "../../../services/DataServices";
 import { useSnackbar } from "../../../contexts/ErrorMessage";
 import { API_ENDPOINTS } from "../../../services/Configuration";
+import OurLocationsPage from "./OurLocation";
+
+const LocationSelector = ({ label, value, onClick }) => {
+	return (
+		<Paper
+			onClick={onClick}
+			sx={{
+				p: "14px",
+				display: "flex",
+				alignItems: "center",
+				cursor: "pointer",
+				backgroundColor: "white",
+				"&:hover": {
+					backgroundColor: "#f0f0f0",
+				},
+			}}>
+			<LocationOnIcon sx={{ mr: 1, color: "text.secondary" }} />
+			<Typography
+				variant='body1'
+				sx={{
+					color: value ? "text.primary" : "text.secondary",
+					flexGrow: 1,
+				}}>
+				{value ? value.name || value : label}
+			</Typography>
+		</Paper>
+	);
+};
+
+const FutureDatePicker = ({
+	value,
+	onChange,
+	label,
+	maxDate,
+	minDate,
+	slotProps,
+}) => {
+	return (
+		<DatePicker
+			label={label}
+			value={value}
+			onChange={onChange}
+			minDate={minDate || dayjs()}
+			maxDate={maxDate}
+			slotProps={{
+				...slotProps,
+				textField: {
+					...slotProps?.textField,
+				},
+			}}
+		/>
+	);
+};
 
 const IntroSection = () => {
 	const dataServices = createDataServices();
 	const { showSnackbar } = useSnackbar();
 	const navigate = useNavigate();
 	const [locations, setLocations] = React.useState([]);
+	const [openDialog, setOpenDialog] = React.useState(false);
+	const [editingMode, setEditingMode] = React.useState("pickup");
 	const [errors, setErrors] = React.useState({});
 	const {
 		formValues,
@@ -55,14 +109,22 @@ const IntroSection = () => {
 		getOfficeLocation();
 	}, []);
 
+	const handleClose = () => {
+		setOpenDialog(false);
+	};
+
 	const handleInputChange = (e) => {
 		e.preventDefault();
 		const { name, value } = e.target;
 
-		// Find the full location object from the selected location name
-		const selectedLocation = locations.find(
-			(loc) => String(loc.location) === String(value)
-		);
+		let selectedLocation;
+		if (typeof value === "string") {
+			selectedLocation = locations.find(
+				(loc) => String(loc.location) === String(value)
+			);
+		} else {
+			selectedLocation = value;
+		}
 
 		const newFormValues = { ...formValues, [name]: selectedLocation };
 
@@ -155,6 +217,15 @@ const IntroSection = () => {
 		formValues.pickupTime
 			? dayjs(formValues.pickupTime).add(1, "hour")
 			: undefined;
+
+	const handlePickupSelect = (location) => {
+		setFormValues((prev) => ({ ...prev, pickupLocation: location }));
+	};
+
+	const handleDropoffSelect = (location) => {
+		setFormValues((prev) => ({ ...prev, dropoffLocation: location }));
+	};
+
 	return (
 		<Box
 			sx={{
@@ -208,11 +279,13 @@ const IntroSection = () => {
 							/>
 						) : (
 							<LocationSelector
-								label='Pickup Location'
-								name='pickupLocation'
-								value={formValues.pickupLocation?.location || ""}
-								onChange={handleInputChange}
-								locations={locations}
+								label='Select Pickup Location'
+								value={formValues.pickupLocation}
+								onClick={() => {
+									setEditingMode("pickup");
+									setOpenDialog(true);
+									if (!expanded) setExpanded(true);
+								}}
 							/>
 						)}
 
@@ -228,31 +301,21 @@ const IntroSection = () => {
 									label={
 										<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
 											<p className='text-black'>
-												Drop off at the same location
+												Dropoff at the same location
 											</p>
-											<Typography
-												component='button'
-												onClick={() => {
-													navigate("/our-locations");
-												}}
-												sx={{
-													color: "var(--primary-color)",
-													cursor: "pointer",
-													textDecoration: "underline",
-												}}>
-												Our Locations
-											</Typography>
 										</Box>
 									}
 								/>
 
 								{!formValues.dropSameAsPickup && (
 									<LocationSelector
-										label='Dropoff Location'
+										label='Select Dropoff Location'
 										name='dropoffLocation'
-										value={formValues.dropoffLocation?.location || ""}
-										onChange={handleInputChange}
-										locations={locations}
+										value={formValues.dropoffLocation}
+										onClick={() => {
+											setEditingMode("dropoff");
+											setOpenDialog(true);
+										}}
 									/>
 								)}
 
@@ -313,6 +376,14 @@ const IntroSection = () => {
 					</Box>
 				</div>
 			</Box>
+
+			<OurLocationsPage
+				open={openDialog}
+				onClose={handleClose}
+				onPickupSelect={handlePickupSelect}
+				onDropoffSelect={handleDropoffSelect}
+				editingMode={editingMode}
+			/>
 		</Box>
 	);
 };

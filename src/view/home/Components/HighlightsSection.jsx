@@ -160,7 +160,7 @@ const HighlightsSection = ({ highlightsData = [], isLoading }) => {
 
 	if (isLoading) {
 		return (
-			<Box sx={{ py: { xs: 8, md: 12 }, bgcolor: "var(--background-color)" }}>
+			<Box sx={{ py: { xs: 8, md: 12 }, bgcolor: "var(--background-paper)" }}>
 				<Container maxWidth='lg'>
 					<Typography
 						variant='h3'
@@ -206,7 +206,7 @@ const HighlightsSection = ({ highlightsData = [], isLoading }) => {
 	}
 
 	return (
-		<Box sx={{ py: { xs: 8, md: 12 }, bgcolor: "var(--background-color)" }}>
+		<Box sx={{ py: { xs: 8, md: 12 }, bgcolor: "var(--background-paper)" }}>
 			<Container maxWidth='lg'>
 				<Typography
 					variant='h3'

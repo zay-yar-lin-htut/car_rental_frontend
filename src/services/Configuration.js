@@ -106,9 +106,9 @@ export const API_ENDPOINTS = {
         base: '/api',
         getAll: '/cars',
         getById: (id) => `/cars/${id}`,
-        create: '/cars',
-        update: (id) => `/cars/${id}`,
-        delete: (id) => `/cars/${id}`,
+        create: '/api/admin/car-create',
+        update: (id) => `/api/admin/car-update/${id}`,
+        delete: (id) => `/api/admin/car-delete/${id}`,
     },
     // Pricing endpoints
     carTypes: {
@@ -134,13 +134,13 @@ export const API_ENDPOINTS = {
     users: {
         base: '/api',
         getAll: '/admin/user-list',
-        // getById: (id) => `/users/${id}`,
-        // create: '/users',
-        // update: (id) => `/users/${id}`,
-        // delete: (id) => `/users/${id}`,
+        addStaff: '/api/admin/admin-register',
         updateProfile: '/api/update-profile',
         getUserProfile: '/profile',
-        uploadImage: "/api/upload&update-profile-image"
+        uploadImage: "/api/upload&update-profile-image",
+        haveFine: "/is-have-fines",
+        resetPass: "/admin/password-reset/",
+        banUser: "/admin/ban-user/"
     },
     // Image proxy endpoint
     image: {
@@ -155,6 +155,6 @@ export const API_ENDPOINTS = {
 //User Role Type 
 export const USER_ROLE = {
     ADMIN: 3,
-    STUFF: 2,
+    STAFF: 2,
     USER: 1,
 };

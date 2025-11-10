@@ -10,12 +10,12 @@ import { UserRoleProvider, useUserRole } from "./contexts/userRoleContext";
 import { IntroFormProvider } from "./contexts/IntroFormProvider";
 import UserManagement from "./view/admin/components/UserManagement";
 import CarManagement from "./view/admin/components/CarManagement";
+import History from "./history/History";
 
 const Home = lazy(() => import("./view/home/Home"));
 const Login = lazy(() => import("./view/login/Login"));
 const Register = lazy(() => import("./view/login/Register"));
 const UserProfile = lazy(() => import("./view/profile/UserProfile"));
-const Cars = lazy(() => import("./view/cars/Cars"));
 const AdminLayout = lazy(() => import("./view/admin/AdminLayout"));
 const OurLocationsPage = lazy(() =>
 	import("./view/home/Components/OurLocation")
@@ -42,6 +42,7 @@ const ProtectedRoute = ({ children }) => {
 // AuthRoute.js - For auth pages that should only be accessible when not logged in
 const AuthRoute = ({ children }) => {
 	const isAuthenticated = AUTH_CONFIG.isAuthenticated();
+	const { role } = useUserRole();
 
 	if (isAuthenticated) {
 		return (
@@ -50,29 +51,17 @@ const AuthRoute = ({ children }) => {
 				replace
 			/>
 		);
-	}
-
-	return children;
-};
-
-// AdminRoute.js - For routes that require admin role
-const AdminRoute = ({ children }) => {
-	const isAuthenticated = AUTH_CONFIG.isAuthenticated();
-	const { role } = useUserRole();
-
-	if (!isAuthenticated) {
+	} else if (isAuthenticated && role === "admin") {
 		return (
 			<Navigate
-				to='/login'
+				to='/admin/user-management'
 				replace
 			/>
 		);
-	}
-
-	if (role !== "admin") {
+	} else if (isAuthenticated && role === "staff") {
 		return (
 			<Navigate
-				to='/home'
+				to='/admin/task-management'
 				replace
 			/>
 		);
@@ -90,14 +79,7 @@ const router = createBrowserRouter([
 		path: "/home",
 		element: <Home />,
 	},
-	{
-		path: "/cars",
-		element: (
-			<ProtectedRoute>
-				<Cars />
-			</ProtectedRoute>
-		),
-	},
+
 	{
 		path: "/login",
 		element: (
@@ -123,6 +105,14 @@ const router = createBrowserRouter([
 		),
 	},
 	{
+		path: "/history",
+		element: (
+			<ProtectedRoute>
+				<History />
+			</ProtectedRoute>
+		),
+	},
+	{
 		path: "/our-locations",
 		element: <OurLocationsPage />,
 	},
@@ -136,35 +126,37 @@ const router = createBrowserRouter([
 	},
 	// Admin Routes with a dedicated layout
 	{
+		path: "/admin",
 		element: (
-			<AdminRoute>
+			<ProtectedRoute>
 				<AdminLayout />
-			</AdminRoute>
+			</ProtectedRoute>
 		),
 		children: [
 			{
-				path: "/user-profile",
-				element: <UserProfile />,
+				index: true,
+				element: (
+					<Navigate
+						to='/admin/user-management'
+						replace
+					/>
+				),
 			},
 			{
-				path: "/user-management",
+				path: "user-management",
 				element: <UserManagement />,
 			},
 			{
-				path: "/car-management",
+				path: "car-management",
 				element: <CarManagement />,
 			},
 			{
-				path: "/contact-management",
-				element: <UserProfile />,
+				path: "contact-management",
+				element: <h1>Hello</h1>,
 			},
 			{
-				path: "/task-management",
-				element: <UserProfile />,
-			},
-			{
-				path: "/our-locations",
-				element: <OurLocationsPage />,
+				path: "task-management",
+				element: <h1>Hello</h1>,
 			},
 		],
 	},

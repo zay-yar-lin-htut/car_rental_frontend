@@ -12,6 +12,7 @@ import {
 	DialogContentText,
 	DialogTitle,
 	FormControl,
+	CircularProgress,
 	InputLabel,
 	Select,
 	MenuItem,
@@ -30,57 +31,76 @@ import {
 import { API_ENDPOINTS } from "../../../services/Configuration";
 import { createDataServices } from "../../../services/DataServices";
 import { useSnackbar } from "../../../contexts/ErrorMessage";
+import useDebouncedSearch from "../../common/useDebouncedSearch";
 
 const UserManagement = () => {
 	const dataServices = React.useMemo(() => createDataServices(), []);
-	const [searchTerm, setSearchTerm] = useState("");
 	const [roleFilter, setRoleFilter] = useState("All");
 	const [openAddDialog, setOpenAddDialog] = useState(false);
-	const [users, setUsers] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const { showSnackbar } = useSnackbar();
+	const [users, setUsers] = useState([]);
 	const [newStaff, setNewStaff] = useState({
 		name: "",
 		email: "",
-		phNo: "",
+		phone: "",
 		role: "Staff",
+		password: "",
+		password_confirmation: "",
 	});
-	const [page, setPage] = useState(1);
+	const [page, setPage] = useState(0);
 	const [rowsPerPage, setRowsPerPage] = useState(5);
+	const [totalUsers, setTotalUsers] = useState(0);
+	const { searchTerm, setSearchTerm, debouncedSearchTerm } = useDebouncedSearch(
+		"",
+		1500
+	);
+	const [loadingAction, setLoadingAction] = useState({
+		ban: null,
+		reset: null,
+		add: false,
+	});
 
 	useEffect(() => {
-		const fetchUsers = async () => {
-			setLoading(true);
-			try {
-				const filterValue =
-					roleFilter === "All" ? "active_user" : roleFilter.toLowerCase();
+		setPage(0);
+	}, [debouncedSearchTerm]);
 
-				const response = await dataServices.retrieve(
-					API_ENDPOINTS.users.base,
-					`${API_ENDPOINTS.users.getAll}?first=${page}&max=${rowsPerPage}&filter_by=${filterValue}`
-				);
-				// Assuming the API returns a `users` array and a `total` count for pagination
-				setUsers(response.data.users || []);
-				setError(null);
-			} catch (err) {
-				const errorMessage = err.message || "Failed to fetch users.";
-				setError(errorMessage);
-				showSnackbar(errorMessage, "error");
-			} finally {
-				setLoading(false);
-			}
-		};
+	const fetchUsers = async (searchQuery) => {
+		setLoading(true);
+		try {
+			const filterValue =
+				roleFilter === "All" ? "active_user" : roleFilter.toLowerCase();
 
-		fetchUsers();
-	}, [roleFilter, page, rowsPerPage, dataServices]);
+			const response = await dataServices.retrieve(
+				API_ENDPOINTS.users.base,
+				`${API_ENDPOINTS.users.getAll}?search_by=${searchQuery}&first=${
+					page + 1
+				}&max=${rowsPerPage}&filter_by=${filterValue}`
+			);
+			// Assuming the API returns a `users` array and a `total` count for pagination
+			setUsers(response.data.users || []);
+			setTotalUsers(response.data.total_users || 0);
+			setError(null);
+		} catch (err) {
+			const errorMessage = err.message || "Failed to fetch users.";
+			setError(errorMessage);
+			showSnackbar(errorMessage, "error");
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	useEffect(() => {
+		fetchUsers(debouncedSearchTerm);
+	}, [roleFilter, page, rowsPerPage, debouncedSearchTerm, dataServices]);
 
 	const handleSearchChange = (event) => {
 		setSearchTerm(event.target.value);
 	};
 
 	const handleRoleFilterChange = (event) => {
-		setPage(1);
+		setPage(0);
 		setRoleFilter(event.target.value);
 	};
 
@@ -90,54 +110,87 @@ const UserManagement = () => {
 
 	const handleCloseAddDialog = () => {
 		setOpenAddDialog(false);
-		setNewStaff({ name: "", email: "", phNo: "", role: "Staff" });
+		setNewStaff({
+			name: "",
+			email: "",
+			phone: "",
+			role: "Staff",
+			password: "",
+			password_confirmation: "",
+		});
 	};
 
 	const handleNewStaffChange = (event) => {
 		setNewStaff({ ...newStaff, [event.target.name]: event.target.value });
 	};
 
-	const handleAddStaff = () => {
-		// Here you would typically make an API call to add the new staff member
-		const newUser = {
-			id: users.length + 1,
-			...newStaff,
-			avatar: `/path/to/avatar${users.length + 1}.jpg`,
-			status: "Active",
+	const handleAddStaff = async () => {
+		setLoadingAction((prev) => ({ ...prev, add: true }));
+		const roleIdMap = { Admin: 3, Staff: 2, User: 1 };
+		const payload = {
+			user_type_id: roleIdMap[newStaff.role],
+			name: newStaff.name,
+			phone: newStaff.phone,
+			email: newStaff.email,
+			password: newStaff.password,
+			password_confirmation: newStaff.password_confirmation,
 		};
-		setUsers([...users, newUser]);
-		handleCloseAddDialog();
-	};
 
-	const handleToggleBan = (userId) => {
-		setUsers(
-			users.map((user) =>
-				user.user_id === userId
-					? {
-							...user,
-							status: user.status === "Active" ? "Banned" : "Active",
-					  }
-					: user
-			)
-		);
-	};
-
-	const handlePasswordReset = (userId) => {
-		// Logic for password reset
-		console.log(`Password reset for user ${userId}`);
-		alert(`Password reset for user ${userId}`);
-	};
-
-	const filteredUsers = useMemo(() => {
-		if (!searchTerm) {
-			return users;
+		try {
+			const response = await dataServices.retrievePOST(
+				payload,
+				API_ENDPOINTS.users.addStaff
+			);
+			showSnackbar(response.message || "Staff added successfully!", "success");
+			handleCloseAddDialog();
+			fetchUsers(debouncedSearchTerm); // Refresh the user list
+		} catch (error) {
+			showSnackbar(error.message || "Failed to add staff.", "error");
+		} finally {
+			setLoadingAction((prev) => ({ ...prev, add: false }));
 		}
-		return users.filter(
-			(user) =>
-				user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-				user.email.toLowerCase().includes(searchTerm.toLowerCase())
-		);
-	}, [users, searchTerm]);
+	};
+
+	const handleToggleBan = async (userId) => {
+		setLoadingAction((prev) => ({ ...prev, ban: userId }));
+		try {
+			const response = await dataServices.retrieve(
+				API_ENDPOINTS.users.base,
+				`${API_ENDPOINTS.users.banUser}${userId}`
+			);
+			showSnackbar(response.message || "User status updated.", "success");
+			// Refresh data by updating a user to trigger re-render
+			setUsers((prev) =>
+				prev.map((user) =>
+					user.user_id === userId
+						? { ...user, is_banned: user.is_banned === 0 ? 1 : 0 }
+						: user
+				)
+			);
+		} catch (error) {
+			showSnackbar(error.message || "Failed to update user status.", "error");
+		} finally {
+			setLoadingAction((prev) => ({ ...prev, ban: null }));
+		}
+	};
+
+	const handlePasswordReset = async (userId) => {
+		setLoadingAction((prev) => ({ ...prev, reset: userId }));
+		try {
+			const response = await dataServices.retrieve(
+				API_ENDPOINTS.users.base,
+				`${API_ENDPOINTS.users.resetPass}${userId}`
+			);
+			showSnackbar(
+				response.message || "Password reset successfully.",
+				"success"
+			);
+		} catch (error) {
+			showSnackbar(error.message || "Failed to reset password.", "error");
+		} finally {
+			setLoadingAction((prev) => ({ ...prev, reset: null }));
+		}
+	};
 
 	const handleChangePage = (event, newPage) => {
 		setPage(newPage);
@@ -145,13 +198,16 @@ const UserManagement = () => {
 
 	const handleChangeRowsPerPage = (event) => {
 		setRowsPerPage(parseInt(event.target.value, 10));
-		setPage(1);
+		setPage(0);
 	};
 
 	const columns = [
 		{
 			id: "avatar",
 			label: "Avatar",
+			sx: {
+				color: "var(--text-color)",
+			},
 			render: (user) => (
 				<Avatar
 					alt={user.name}
@@ -159,23 +215,38 @@ const UserManagement = () => {
 				/>
 			),
 		},
-		{ id: "name", label: "Name" },
-		{ id: "email", label: "Email" },
-		{ id: "phone", label: "Phone No" },
+		{
+			id: "name",
+			label: "Name",
+			sx: {
+				color: "var(--text-color)",
+			},
+		},
+		{
+			id: "email",
+			label: "Email",
+			sx: {
+				color: "var(--text-color)",
+			},
+		},
+		{
+			id: "phone",
+			label: "Phone No",
+			sx: {
+				color: "var(--text-color)",
+			},
+		},
 		{
 			id: "role",
 			label: "Role",
+			sx: {
+				color: "var(--text-color)",
+			},
 			render: (user) => (
 				<Chip
 					label={user.type_name}
 					sx={{
-						backgroundColor:
-							user.type_name === "Admin"
-								? "var(--error-color)"
-								: user.type_name === "Staff"
-								? "var(--primary-color)"
-								: "var(--secondary-color)",
-						color: "var(--primary-contrast-text)",
+						color: "var(--text-color)",
 					}}
 					size='small'
 				/>
@@ -184,18 +255,19 @@ const UserManagement = () => {
 		{
 			id: "status",
 			label: "Status",
+			sx: {
+				color: "var(--text-color)",
+			},
 			render: (user) => (
 				<Chip
-					icon={
-						user.is_banned === 0 ? <CheckCircleIcon /> : <BlockIcon />
-					}
+					icon={user.is_banned === 0 ? <CheckCircleIcon /> : <BlockIcon />}
 					label={user.is_banned === 0 ? "Active" : "Banned"}
 					sx={{
 						backgroundColor:
 							user.is_banned === 0
 								? "var(--success-color)"
 								: "var(--error-color)",
-						color: "var(--primary-contrast-text)",
+						color: "var(--text-color)",
 					}}
 					size='small'
 				/>
@@ -205,23 +277,50 @@ const UserManagement = () => {
 			id: "actions",
 			label: "Actions",
 			align: "right",
+			sx: {
+				color: "var(--text-color)",
+			},
 			render: (user) => (
 				<>
-					<Tooltip
-						title={user.is_banned === 0 ? "Ban User" : "Unban User"}>
-						<IconButton onClick={() => handleToggleBan(user.user_id)}>
-							{user.is_banned === 0 ? (
-								<BlockIcon />
-							) : (
-								<CheckCircleIcon />
-							)}
-						</IconButton>
+					<Tooltip title={user.is_banned === 0 ? "Ban User" : "Unban User"}>
+						<span>
+							<IconButton
+								onClick={() => handleToggleBan(user.user_id)}
+								disabled={loadingAction.ban === user.user_id}>
+								{loadingAction.ban === user.user_id ? (
+									<CircularProgress size={24} />
+								) : user.is_banned === 0 ? (
+									<BlockIcon
+										style={{
+											color: "var(--error-color)",
+										}}
+									/>
+								) : (
+									<CheckCircleIcon
+										style={{
+											color: "var(--success-color)",
+										}}
+									/>
+								)}
+							</IconButton>
+						</span>
 					</Tooltip>
 					<Tooltip title='Reset Password'>
-						<IconButton
-							onClick={() => handlePasswordReset(user.user_id)}>
-							<LockResetIcon />
-						</IconButton>
+						<span>
+							<IconButton
+								onClick={() => handlePasswordReset(user.user_id)}
+								disabled={loadingAction.reset === user.user_id}>
+								{loadingAction.reset === user.user_id ? (
+									<CircularProgress size={24} />
+								) : (
+									<LockResetIcon
+										style={{
+											color: "var(--primary-color)",
+										}}
+									/>
+								)}
+							</IconButton>
+						</span>
 					</Tooltip>
 				</>
 			),
@@ -233,7 +332,12 @@ const UserManagement = () => {
 	}
 
 	return (
-		<Paper sx={{ p: 2, bgcolor: "var(--background-paper)", color: "var(--text-color)" }}>
+		<Paper
+			sx={{
+				p: 2,
+				bgcolor: "var(--background-paper)",
+				color: "var(--text-color)",
+			}}>
 			<Typography
 				variant='h4'
 				marginBottom={2}
@@ -254,7 +358,27 @@ const UserManagement = () => {
 					variant='outlined'
 					value={searchTerm}
 					onChange={handleSearchChange}
-					sx={{ flexGrow: 1, minWidth: "200px" }}
+					InputLabelProps={{
+						style: { color: "var(--text-color)" },
+					}}
+					sx={{
+						flexGrow: 1,
+						minWidth: "200px",
+						"& .MuiInputBase-input": {
+							color: "var(--text-color)", // Input text color
+						},
+						"& .MuiOutlinedInput-root": {
+							"& fieldset": {
+								borderColor: "var(--text-secondary-color)", // Default border color
+							},
+							"&:hover fieldset": {
+								borderColor: "var(--primary-color)", // Border color on hover
+							},
+							"&.Mui-focused fieldset": {
+								borderColor: "var(--primary-color)", // Border color when focused
+							},
+						},
+					}}
 				/>
 				<FormControl
 					variant='outlined'
@@ -280,12 +404,12 @@ const UserManagement = () => {
 
 			<ReusableTable
 				columns={columns}
-				data={filteredUsers}
+				data={users}
 				loading={loading}
 				error={error}
 				page={page}
 				rowsPerPage={rowsPerPage}
-				total={filteredUsers.length}
+				total={totalUsers}
 				onPageChange={handleChangePage}
 				onRowsPerPageChange={handleChangeRowsPerPage}
 				keyExtractor={(user) => user.user_id}
@@ -297,12 +421,12 @@ const UserManagement = () => {
 				PaperProps={{
 					sx: {
 						bgcolor: "var(--background-paper)",
-						color: "var(--text-color)"
-					}
+						color: "var(--text-color)",
+					},
 				}}>
 				<DialogTitle>Add New Staff</DialogTitle>
 				<DialogContent>
-					<DialogContentText color="var(--text-secondary-color)">
+					<DialogContentText color='var(--text-secondary-color)'>
 						Please fill in the details for the new staff member.
 					</DialogContentText>
 					<TextField
@@ -328,12 +452,32 @@ const UserManagement = () => {
 					/>
 					<TextField
 						margin='dense'
-						name='phNo'
+						name='phone'
 						label='Phone Number'
 						type='tel'
 						fullWidth
 						variant='standard'
-						value={newStaff.phNo}
+						value={newStaff.phone}
+						onChange={handleNewStaffChange}
+					/>
+					<TextField
+						margin='dense'
+						name='password'
+						label='Password'
+						type='password'
+						fullWidth
+						variant='standard'
+						value={newStaff.password}
+						onChange={handleNewStaffChange}
+					/>
+					<TextField
+						margin='dense'
+						name='password_confirmation'
+						label='Confirm Password'
+						type='password'
+						fullWidth
+						variant='standard'
+						value={newStaff.password_confirmation}
 						onChange={handleNewStaffChange}
 					/>
 					<FormControl
@@ -354,7 +498,11 @@ const UserManagement = () => {
 				</DialogContent>
 				<DialogActions>
 					<Button onClick={handleCloseAddDialog}>Cancel</Button>
-					<Button onClick={handleAddStaff}>Add</Button>
+					<Button
+						onClick={handleAddStaff}
+						disabled={loadingAction.add}>
+						{loadingAction.add ? <CircularProgress size={24} /> : "Add"}
+					</Button>
 				</DialogActions>
 			</Dialog>
 		</Paper>

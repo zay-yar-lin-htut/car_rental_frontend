@@ -13,15 +13,11 @@ import {
 } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 
-// Icons
-import GoogleIcon from "@mui/icons-material/Google";
-
 // Assuming these are correctly set up in your project
 import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
 import { createDataServices } from "../../services/DataServices";
 import { useSnackbar } from "../../contexts/ErrorMessage";
 import VideoBackground1 from "../common/Background1";
-
 
 const dataServices = createDataServices();
 
@@ -47,7 +43,14 @@ const Login = () => {
 			showSnackbar(response.message, "success");
 			AUTH_CONFIG.setToken(response.data.token);
 			AUTH_CONFIG.setUserData(response.data.user);
-			navigate("/home");
+
+			if (response.data.user.user_type_id === 3) {
+				navigate("/admin/user-management");
+			} else if (response.data.user.user_type_id === 2) {
+				navigate("/staff/task-management");
+			} else {
+				navigate("/");
+			}
 		} catch (err) {
 			setError(err.message || "An error occurred during login.");
 		} finally {
@@ -63,10 +66,10 @@ const Login = () => {
 				display: "flex",
 				alignItems: "center",
 				justifyContent: "center",
-				overflow: "hidden", 
+				overflow: "hidden",
 				p: 2,
 			}}>
-			<VideoBackground1 videoSrc="/bg-2.mp4" />
+			<VideoBackground1 videoSrc='/bg-2.mp4' />
 
 			<Box
 				sx={{

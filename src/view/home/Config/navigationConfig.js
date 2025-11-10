@@ -3,21 +3,24 @@ const baseLinks = [{ to: "/", label: "Home" }];
 const loggedOutLinks = [
     ...baseLinks,
     { to: "/cars", label: "Models" },
-    { to: "/innovation", label: "Innovation" },
+    { to: "/reviews", label: "Reviews" },
+    { to: "#", label: "Contact Us" },
 ];
 
 const userLinks = [
     ...baseLinks,
     { to: "/cars", label: "Models" },
-    // { to: "/innovation", label: "Innovation" },
+    { to: "/history", label: "History" },
     { to: "/user-profile", label: "Profile" },
+    { to: "#", label: "Contact Us" },
 ];
 
 const adminLinks = [
     ...baseLinks,
-    { to: "/user-management", label: "User Management" },
+    { to: "admin/user-management", label: "User Management" },
     // { to: "/admin-pane", label: "Admin Panel" },
     { to: "/user-profile", label: "Profile" },
+    { to: "#", label: "Contact Us" },
 ];
 
 
@@ -26,7 +29,7 @@ export const getNavLinks = (isLogin, role) => {
         return loggedOutLinks;
     }
 
-    if (role === "admin") {
+    if (role === "admin" || role === "staff") {
         return adminLinks;
     }
 

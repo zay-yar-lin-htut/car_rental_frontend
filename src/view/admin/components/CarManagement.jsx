@@ -9,6 +9,7 @@ import {
 	Tooltip,
 	IconButton,
 	FormControl,
+	CircularProgress,
 	InputLabel,
 	Select,
 	MenuItem,
@@ -27,173 +28,214 @@ import {
 	Add as AddIcon,
 	CloudUpload as CloudUploadIcon,
 } from "@mui/icons-material";
+import { API_ENDPOINTS } from "../../../services/Configuration";
+import { useSnackbar } from "../../../contexts/ErrorMessage";
+import useDebouncedSearch from "../../common/useDebouncedSearch";
 
 const dataServices = createDataServices();
 
-const dummyCars = [
-	{
-		id: 1,
-		make: "Toyota",
-		model: "Camry",
-		year: 2021,
-		color: "Silver",
-		license_no: "YGN-1234",
-		price_per_hour: 15,
-		price_per_day: 100,
-		seats: 5,
-		description: "A reliable and comfortable sedan for city driving.",
-		luggage_capacity: 2,
-		transmission: "Automatic",
-		owner_name: "John Doe",
-		fuel_type: "Petrol",
-		available: true,
-		image_url: "https://via.placeholder.com/150/92c952",
-	},
-	{
-		id: 2,
-		make: "Honda",
-		model: "CR-V",
-		year: 2022,
-		color: "Blue",
-		license_no: "MDY-5678",
-		price_per_hour: 20,
-		price_per_day: 150,
-		seats: 5,
-		description: "Spacious SUV, perfect for family trips.",
-		luggage_capacity: 4,
-		transmission: "Automatic",
-		owner_name: "Jane Smith",
-		fuel_type: "Petrol",
-		available: false,
-		image_url: "https://via.placeholder.com/150/771796",
-	},
-];
-
 const CarManagement = () => {
+	const { showSnackbar } = useSnackbar();
 	const [cars, setCars] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [page, setPage] = useState(0);
 	const [rowsPerPage, setRowsPerPage] = useState(5);
-	const [searchTerm, setSearchTerm] = useState("");
+	const [totalCars, setTotalCars] = useState(0);
+	const { searchTerm, setSearchTerm, debouncedSearchTerm } = useDebouncedSearch(
+		"",
+		1500
+	);
 	const [availabilityFilter, setAvailabilityFilter] = useState("All");
-	const [openAddDialog, setOpenAddDialog] = useState(false);
-	const [newCar, setNewCar] = useState({
-		make: "",
+	const [sort, setSort] = useState({ by: "created_at", order: "desc" });
+	const [openManageCarDialog, setOpenManageCarDialog] = useState(false);
+
+	const [selectedFile, setSelectedFile] = useState(null);
+	const [imagePreview, setImagePreview] = useState(null);
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [editingCar, setEditingCar] = useState(null); // State to hold the car being edited
+	const [carFormData, setCarFormData] = useState({
 		model: "",
-		year: "",
 		color: "",
-		license_no: "",
+		license_plate: "",
 		price_per_hour: "",
 		price_per_day: "",
-		seats: "",
-		description: "",
+		number_of_seats: "",
 		luggage_capacity: "",
 		transmission: "Automatic",
-		fuel_type: "Petrol",
-		available: true,
+		fuel_type: "petrol",
+		car_type_id: "",
+		car_image: "",
 	});
 
-	useEffect(() => {
-		const fetchCars = () => {
-			setLoading(true);
-			// Simulate API call
-			setTimeout(() => {
-				setCars(dummyCars);
-				setLoading(false);
-			}, 1000); // 1-second delay
-		};
-		fetchCars();
-	}, []);
+	const fetchCars = async () => {
+		setLoading(true);
+		try {
+			const params = new URLSearchParams({
+				first: page + 1,
+				max: rowsPerPage,
+				search_by: debouncedSearchTerm,
+				filter_by:
+					availabilityFilter === "All" ? "" : availabilityFilter.toLowerCase(),
+				sort_by: sort.by,
+				order: sort.order,
+			});
 
-	const handleSearchChange = (event) => {
-		setSearchTerm(event.target.value);
+			const response = await dataServices.retrieve(
+				API_ENDPOINTS.cars.base,
+				`${API_ENDPOINTS.cars.getAll}?${params.toString()}`
+			);
+			setCars(response.data.cars || []);
+			setTotalCars(response.data.totalCars || 0);
+			setError(null);
+		} catch (err) {
+			const errorMessage = err.message || "Failed to fetch cars.";
+			setError(errorMessage);
+		} finally {
+			setLoading(false);
+		}
 	};
+
+	useEffect(() => {
+		fetchCars();
+	}, [page, rowsPerPage, debouncedSearchTerm, availabilityFilter, sort]);
 
 	const handleAvailabilityFilterChange = (event) => {
 		setPage(0);
 		setAvailabilityFilter(event.target.value);
 	};
 
-	const handleOpenAddDialog = () => {
-		setOpenAddDialog(true);
-	};
-
-	const handleCloseAddDialog = () => {
-		setOpenAddDialog(false);
-		setNewCar({
-			make: "",
+	const handleCloseManageCarDialog = () => {
+		setOpenManageCarDialog(false);
+		setEditingCar(null);
+		setCarFormData({
 			model: "",
-			year: "",
 			color: "",
-			license_no: "",
+			license_plate: "",
 			price_per_hour: "",
 			price_per_day: "",
-			seats: "",
-			description: "",
+			number_of_seats: "",
 			luggage_capacity: "",
 			transmission: "Automatic",
-			fuel_type: "Petrol",
-			available: true,
+			fuel_type: "petrol",
+			car_type_id: "",
+
+			car_image: "",
 		});
+		setSelectedFile(null);
+		setImagePreview(null);
 	};
 
 	const handleNewCarChange = (event) => {
 		const { name, value, type, checked } = event.target;
-		setNewCar({
-			...newCar,
+		setCarFormData({
+			...carFormData,
 			[name]: type === "checkbox" ? checked : value,
 		});
 	};
 
-	const handleAddCar = () => {
-		// In a real app, you would make an API call here.
-		const carToAdd = {
-			id: cars.length + 1,
-			...newCar,
-			owner_name: "Current User", // Placeholder for owner
-			image_url: "https://via.placeholder.com/150/cccccc", // Placeholder image
-		};
-		setCars([...cars, carToAdd]);
-		handleCloseAddDialog();
-	};
-
-	const handleEdit = (car) => {
-		// In a real app, you would likely open the add/edit dialog with the car's data.
-		console.log("Edit car", car);
-		alert(`Editing ${car.make} ${car.model}`);
-	};
-
-	const handleDelete = async (car) => {
-		if (!window.confirm("Delete this car?")) return;
-		try {
-			// This is a placeholder for a real API call.
-			// await dataServices.retrieveDELETE("cars", `/${car.id}`);
-			setCars((prev) => prev.filter((c) => c.id !== car.id));
-		} catch (err) {
-			console.error("Delete failed", err);
-			alert("Delete failed: " + (err.message || ""));
+	const handleFileChange = (event) => {
+		const file = event.target.files[0];
+		if (file) {
+			setSelectedFile(file);
+			const reader = new FileReader();
+			reader.onloadend = () => {
+				setImagePreview(reader.result);
+			};
+			reader.readAsDataURL(file);
 		}
 	};
 
-	const filteredCars = useMemo(() => {
-		return cars
-			.filter((car) => {
-				if (availabilityFilter === "All") return true;
-				if (availabilityFilter === "Available") return car.available;
-				if (availabilityFilter === "Unavailable") return !car.available;
-				return true;
-			})
-			.filter((car) => {
-				if (!searchTerm) return true;
-				const searchTermLower = searchTerm.toLowerCase();
-				return (
-					car.make.toLowerCase().includes(searchTermLower) ||
-					car.model.toLowerCase().includes(searchTermLower) ||
-					car.license_no.toLowerCase().includes(searchTermLower)
+	const handleOpenAddDialog = () => {
+		setOpenManageCarDialog(true);
+		setEditingCar(null);
+		setCarFormData({
+			model: "",
+			color: "",
+			license_plate: "",
+			price_per_hour: "",
+			price_per_day: "",
+			number_of_seats: "",
+			luggage_capacity: "",
+			transmission: "",
+			fuel_type: "",
+			car_type_id: "",
+			ownership_condition: "",
+		});
+		setImagePreview(null);
+		setSelectedFile(null);
+	};
+
+	const handleFormSubmit = () => {
+		setIsSubmitting(true);
+		const formData = new FormData();
+		const isEditing = !!editingCar;
+
+		// Populate FormData
+		Object.keys(carFormData).forEach((key) => {
+			// Don't append the image URL string on updates
+			if (isEditing && key === "car_image") return;
+			formData.append(key, carFormData[key]);
+		});
+
+		if (selectedFile) {
+			// A new file was selected
+			formData.append("car_image", selectedFile);
+		}
+
+		const apiCall = isEditing
+			? dataServices.retrievePOSTFormData(
+					formData,
+					API_ENDPOINTS.cars.update(editingCar.car_id)
+			  )
+			: dataServices.retrievePOSTFormData(formData, API_ENDPOINTS.cars.create);
+		apiCall
+			.then(() => {
+				showSnackbar(
+					`Car ${editingCar ? "updated" : "added"} successfully!`,
+					"success"
 				);
-			});
-	}, [cars, searchTerm, availabilityFilter]);
+				handleCloseManageCarDialog();
+				fetchCars();
+			})
+			.catch((err) =>
+				showSnackbar(
+					err.message || `Failed to ${editingCar ? "update" : "add"} car.`,
+					"error"
+				)
+			)
+			.finally(() => setIsSubmitting(false));
+	};
+
+	const handleEdit = (car) => {
+		setEditingCar(car);
+		console.log("car", car);
+
+		setCarFormData({
+			...car,
+			license_plate: car.license_plate,
+			car_type_id: car.car_type_id || "",
+		});
+		setImagePreview(car.car_image_url);
+		setSelectedFile(null); // Clear previous file selection
+		setOpenManageCarDialog(true);
+	};
+
+	const handleDelete = async (car) => {
+		if (!window.confirm(`Are you sure you want to delete ${car.model}?`))
+			return;
+
+		try {
+			await dataServices.retrieveDELETE(
+				API_ENDPOINTS.cars.base,
+				API_ENDPOINTS.cars.delete(car.car_id)
+			);
+			showSnackbar("Car deleted successfully!", "success");
+			fetchCars(); // Refresh the list
+		} catch (err) {
+			showSnackbar(err.message || "Failed to delete car.", "error");
+		}
+	};
 
 	const handleChangePage = (event, newPage) => {
 		setPage(newPage);
@@ -210,7 +252,7 @@ const CarManagement = () => {
 			label: "Image",
 			render: (car) => (
 				<img
-					src={car.image_url || car.photo || ""}
+					src={car.car_image_url || undefined}
 					alt={car.model || "car"}
 					style={{
 						width: 100,
@@ -220,63 +262,97 @@ const CarManagement = () => {
 					}}
 				/>
 			),
+			sx: {
+				color: "var(--text-color)",
+			},
 		},
+
 		{
-			id: "model",
-			label: "Model",
-			render: (car) => (
-				<div>
-					<div>{[car.make, car.model, car.year].filter(Boolean).join(" ")}</div>
-					<div style={{ fontSize: "0.75rem", color: "gray" }}>
-						{car.model_variant || ""}
-					</div>
-				</div>
-			),
+			id: "license_plate",
+			label: "License Plate",
+			sx: {
+				color: "var(--text-color)",
+			},
 		},
-		{ id: "license_no", label: "License No" },
 		{
 			id: "price_per_day",
 			label: "Price / day",
 			align: "right",
+			sx: {
+				color: "var(--text-color)",
+			},
 			render: (car) =>
-				car.price_per_day != null ? `$${car.price_per_day}` : "-",
+				car.price_per_day != null
+					? `$${Number(car.price_per_day).toFixed(2)}`
+					: "-",
 		},
-		{ id: "seats", label: "Seats", align: "center" },
+		{
+			id: "number_of_seats",
+			label: "number_of_seats",
+			align: "center",
+			sx: {
+				color: "var(--text-color)",
+			},
+		},
 
-		{ id: "luggage_capacity", label: "Luggage", align: "center" },
-		{ id: "transmission", label: "Transmission", align: "center" },
+		{
+			id: "luggage_capacity",
+			label: "Luggage",
+			align: "center",
+			sx: {
+				color: "var(--text-color)",
+			},
+		},
+		{
+			id: "transmission",
+			label: "Transmission",
+			align: "center",
+			sx: {
+				color: "var(--text-color)",
+			},
+		},
 		{
 			id: "owner_name",
 			label: "Owner",
-			render: (car) => car.owner_name || car.owner || "-",
+			render: (car) => car.owner_name || car.ownership_condition || "-",
+			sx: {
+				color: "var(--text-color)",
+			},
 		},
-		{ id: "fuel_type", label: "Fuel", align: "center" },
 		{
-			id: "available",
-			label: "Available",
+			id: "fuel_type",
+			label: "Fuel",
 			align: "center",
-			render: (car) => (
-				<Chip
-					label={car.available ? "Yes" : "No"}
-					color={car.available ? "success" : "error"}
-					size='small'
-				/>
-			),
+			sx: {
+				color: "var(--text-color)",
+			},
 		},
+
 		{
 			id: "actions",
 			label: "Action",
 			align: "center",
+			sx: {
+				color: "var(--text-color)",
+			},
 			render: (car) => (
 				<>
 					<Tooltip title='Edit Car'>
 						<IconButton onClick={() => handleEdit(car)}>
-							<EditIcon />
+							<EditIcon
+								style={{
+									color: "var(--success-color)",
+								}}
+							/>
 						</IconButton>
 					</Tooltip>
 					<Tooltip title='Delete Car'>
 						<IconButton onClick={() => handleDelete(car)}>
-							<DeleteIcon />
+							<DeleteIcon
+								style={{
+									color: "var(--error-color)",
+								}}
+							/>
 						</IconButton>
 					</Tooltip>
 				</>
@@ -285,10 +361,10 @@ const CarManagement = () => {
 	];
 
 	return (
-		<Paper
+		<Box
 			sx={{
 				p: 2,
-				// bgcolor: "var(--background-paper)",
+				bgcolor: "var(--background-paper)",
 				color: "var(--text-color)",
 			}}>
 			<Typography
@@ -310,17 +386,20 @@ const CarManagement = () => {
 					label='Search by make, model, license...'
 					variant='outlined'
 					value={searchTerm}
-					onChange={handleSearchChange}
+					onChange={(e) => setSearchTerm(e.target.value)}
 					sx={{ flexGrow: 1, minWidth: "250px" }}
 				/>
 				<FormControl
 					variant='outlined'
-					sx={{ minWidth: 120 }}>
+					sx={{ minWidth: 120, color: "white" }}>
 					<InputLabel>Availability</InputLabel>
 					<Select
 						value={availabilityFilter}
 						onChange={handleAvailabilityFilterChange}
-						label='Availability'>
+						label='Availability'
+						sx={{
+							color: "white",
+						}}>
 						<MenuItem value='All'>All</MenuItem>
 						<MenuItem value='Available'>Available</MenuItem>
 						<MenuItem value='Unavailable'>Unavailable</MenuItem>
@@ -329,6 +408,9 @@ const CarManagement = () => {
 				<Button
 					variant='contained'
 					startIcon={<AddIcon />}
+					sx={{
+						p: 1.8,
+					}}
 					onClick={handleOpenAddDialog}>
 					Add Car
 				</Button>
@@ -336,23 +418,29 @@ const CarManagement = () => {
 
 			<ReusableTable
 				columns={columns}
-				data={filteredCars}
+				data={cars}
 				loading={loading}
 				error={error}
 				page={page}
 				rowsPerPage={rowsPerPage}
-				total={filteredCars.length}
+				total={totalCars}
 				onPageChange={handleChangePage}
 				onRowsPerPageChange={handleChangeRowsPerPage}
-				keyExtractor={(car) => car.id || car.license_no}
+				keyExtractor={(car) => car.car_id}
 			/>
 
 			<Dialog
-				open={openAddDialog}
-				onClose={handleCloseAddDialog}
+				open={openManageCarDialog}
+				onClose={handleCloseManageCarDialog}
 				maxWidth='md'
-				fullWidth>
-				<DialogTitle>Add New Car</DialogTitle>
+				fullWidth
+				PaperProps={{
+					sx: {
+						bgcolor: "var(--background-paper)",
+						color: "var(--text-color)",
+					},
+				}}>
+				<DialogTitle>{editingCar ? "Edit Car" : "Add New Car"}</DialogTitle>
 				<DialogContent>
 					<Box
 						sx={{
@@ -363,7 +451,9 @@ const CarManagement = () => {
 							minHeight: 300,
 						}}>
 						{/* Left Column: Image Upload */}
-						<Box sx={{ width: { xs: "100%", md: "40%" } }}>
+						<Box
+							component='label'
+							sx={{ width: { xs: "100%", md: "40%" }, cursor: "pointer" }}>
 							<Paper
 								variant='outlined'
 								sx={{
@@ -375,28 +465,43 @@ const CarManagement = () => {
 									p: 2,
 									boxSizing: "border-box",
 									textAlign: "center",
-									cursor: "pointer",
 									backgroundColor: "action.hover",
 									minHeight: { xs: 200, md: "auto" },
+									backgroundImage: imagePreview
+										? `url(${imagePreview})`
+										: "none",
+									backgroundSize: "cover",
+									backgroundPosition: "center",
 								}}>
-								<CloudUploadIcon
-									sx={{ fontSize: 60, color: "text.secondary", mb: 2 }}
-								/>
-								<Typography
-									variant='h6'
-									gutterBottom>
-									Click to upload
-								</Typography>
-								<Typography
-									variant='body2'
-									color='text.secondary'>
-									PNG, JPG, GIF up to 10MB
-								</Typography>
-								{/* Hidden input for file upload */}
+								{!imagePreview && (
+									<>
+										<CloudUploadIcon
+											sx={{
+												fontSize: 60,
+												color: "var(--text-secondary-color)",
+												mb: 2,
+											}}
+										/>
+										<Typography
+											variant='h6'
+											sx={{
+												color: "var(--text-secondary-color)",
+											}}
+											gutterBottom>
+											Click to upload
+										</Typography>
+										<Typography
+											variant='body2'
+											color='var(--text-secondary-color)'>
+											PNG, JPG, GIF up to 10MB
+										</Typography>
+									</>
+								)}
 								<input
 									type='file'
 									hidden
 									accept='image/*'
+									onChange={handleFileChange}
 								/>
 							</Paper>
 						</Box>
@@ -414,69 +519,53 @@ const CarManagement = () => {
 									fullWidth
 									label='Model'
 									name='model'
-									value={newCar.model}
+									value={carFormData.model}
 									onChange={handleNewCarChange}
+									InputLabelProps={{ style: { color: "white" } }}
 								/>
 							</Box>
-							<Box sx={{ width: { xs: "100%", sm: "calc(33.33% - 11px)" } }}>
-								<TextField
-									fullWidth
-									label='Year'
-									name='year'
-									type='number'
-									value={newCar.year}
-									onChange={handleNewCarChange}
-								/>
-							</Box>
+
 							<Box sx={{ width: { xs: "100%", sm: "calc(33.33% - 11px)" } }}>
 								<TextField
 									fullWidth
 									label='Color'
 									name='color'
-									value={newCar.color}
+									value={carFormData.color}
 									onChange={handleNewCarChange}
+									InputLabelProps={{ style: { color: "white" } }}
 								/>
 							</Box>
 							<Box sx={{ width: { xs: "100%", sm: "calc(33.33% - 11px)" } }}>
 								<TextField
 									fullWidth
 									label='License No.'
-									name='license_no'
-									value={newCar.license_no}
+									name='license_plate'
+									value={carFormData.license_plate}
 									onChange={handleNewCarChange}
+									InputLabelProps={{ style: { color: "white" } }}
 								/>
 							</Box>
 							<Box sx={{ width: { xs: "100%", sm: "calc(33.33% - 11px)" } }}>
 								<TextField
 									fullWidth
-									label='Seats'
-									name='seats'
+									label='number_of_seats'
+									name='number_of_seats'
 									type='number'
-									value={newCar.seats}
+									value={carFormData.number_of_seats}
 									onChange={handleNewCarChange}
+									InputLabelProps={{ style: { color: "white" } }}
 								/>
 							</Box>
-							<Box sx={{ width: { xs: "100%", sm: "calc(33.33% - 11px)" } }}>
-								<FormControl fullWidth>
-									<InputLabel>Own By</InputLabel>
-									<Select
-										name='owner_id'
-										value={newCar.owner_id}
-										label='Owner'
-										onChange={() => {} /* Placeholder */}>
-										<MenuItem value='Company'>Company</MenuItem>
-										<MenuItem value='User'>User</MenuItem>
-									</Select>
-								</FormControl>
-							</Box>
+
 							<Box sx={{ width: { xs: "100%", sm: "calc(50% - 8px)" } }}>
 								<TextField
 									fullWidth
 									label='Price per Hour'
 									name='price_per_hour'
 									type='number'
-									value={newCar.price_per_hour}
+									value={carFormData.price_per_hour}
 									onChange={handleNewCarChange}
+									InputLabelProps={{ style: { color: "white" } }}
 								/>
 							</Box>
 							<Box sx={{ width: { xs: "100%", sm: "calc(50% - 8px)" } }}>
@@ -485,88 +574,87 @@ const CarManagement = () => {
 									label='Price per Day'
 									name='price_per_day'
 									type='number'
-									value={newCar.price_per_day}
+									value={carFormData.price_per_day}
 									onChange={handleNewCarChange}
+									InputLabelProps={{ style: { color: "white" } }}
 								/>
 							</Box>
-							{/* <Box sx={{ width: "100%" }}>
-								<TextField
-									fullWidth
-									label='Description'
-									name='description'
-									multiline
-									rows={3}
-									value={newCar.description}
-									onChange={handleNewCarChange}
-								/>
-							</Box> */}
+
 							<Box sx={{ width: { xs: "100%", sm: "calc(25% - 12px)" } }}>
 								<TextField
 									fullWidth
 									label='Luggage Capacity'
 									name='luggage_capacity'
 									type='number'
-									value={newCar.luggage_capacity}
+									value={carFormData.luggage_capacity}
 									onChange={handleNewCarChange}
+									InputLabelProps={{ style: { color: "white" } }}
 								/>
 							</Box>
 							<Box sx={{ width: { xs: "100%", sm: "calc(25% - 12px)" } }}>
 								<FormControl fullWidth>
-									<InputLabel>Transmission</InputLabel>
+									<InputLabel sx={{ color: "white" }}>Transmission</InputLabel>
 									<Select
 										name='transmission'
-										value={newCar.transmission}
+										value={carFormData.transmission}
 										label='Transmission'
 										onChange={handleNewCarChange}>
-										<MenuItem value='Automatic'>Automatic</MenuItem>
-										<MenuItem value='Manual'>Manual</MenuItem>
+										<MenuItem value='auto'>Auto</MenuItem>
+										<MenuItem value='manual'>Manual</MenuItem>
 									</Select>
 								</FormControl>
 							</Box>
 							<Box sx={{ width: { xs: "100%", sm: "calc(25% - 12px)" } }}>
 								<FormControl fullWidth>
-									<InputLabel>Fuel Type</InputLabel>
+									<InputLabel sx={{ color: "white" }}>Fuel Type</InputLabel>
 									<Select
 										name='fuel_type'
-										value={newCar.fuel_type}
+										value={carFormData.fuel_type}
 										label='Fuel Type'
 										onChange={handleNewCarChange}>
-										<MenuItem value='Petrol'>Petrol</MenuItem>
-										<MenuItem value='Diesel'>Diesel</MenuItem>
-										<MenuItem value='Electric'>Electric</MenuItem>
+										<MenuItem value='petrol'>Petrol</MenuItem>
+										<MenuItem value='diesel'>Diesel</MenuItem>
+										<MenuItem value='electric'>Electric</MenuItem>
 									</Select>
 								</FormControl>
 							</Box>
-							<Box
-								sx={{
-									width: { xs: "100%", sm: "calc(25% - 12px)" },
-									display: "flex",
-									alignItems: "center",
-								}}>
-								<FormControlLabel
-									control={
-										<Switch
-											checked={newCar.available}
-											onChange={handleNewCarChange}
-											name='available'
-										/>
-									}
-									label='Available'
-								/>
+							<Box sx={{ width: { xs: "100%", sm: "calc(25% - 12px)" } }}>
+								<FormControl fullWidth>
+									<InputLabel sx={{ color: "white" }}>Car Type</InputLabel>
+									<Select
+										name='car_type_id'
+										value={carFormData.car_type_id}
+										label='Car Type'
+										onChange={handleNewCarChange}>
+										<MenuItem value={1}>Small</MenuItem>
+										<MenuItem value={2}>Medium</MenuItem>
+										<MenuItem value={3}>Large</MenuItem>
+										<MenuItem value={4}>Luxury</MenuItem>
+										<MenuItem value={5}>People Carrier</MenuItem>
+										<MenuItem value={6}>Van</MenuItem>
+									</Select>
+								</FormControl>
 							</Box>
 						</Box>
 					</Box>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={handleCloseAddDialog}>Cancel</Button>
+					<Button onClick={handleCloseManageCarDialog}>Cancel</Button>
 					<Button
-						onClick={handleAddCar}
-						variant='contained'>
-						Add Car
+						onClick={handleFormSubmit}
+						variant='contained'
+						disabled={isSubmitting}>
+						{isSubmitting ? (
+							<CircularProgress size={24} />
+						) : editingCar ? (
+							"Update Car"
+						) : (
+							"Add Car"
+						)}
 					</Button>
 				</DialogActions>
 			</Dialog>
-		</Paper>
+		</Box>
 	);
 };
 

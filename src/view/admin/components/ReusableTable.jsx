@@ -38,11 +38,19 @@ const ReusableTable = ({
 		);
 	}
 
+	// Client-side pagination if data length is greater than rows per page
+	// and total matches data length. This implies server-side pagination is not active for this instance.
+	const isClientSidePagination =
+		data.length > rowsPerPage && data.length === total;
+	const pagedData = isClientSidePagination
+		? data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+		: data;
+
 	return (
 		<Paper
 			sx={{
 				p: 2,
-				// bgcolor: "var(--background-paper)",
+				bgcolor: "var(--background-paper)",
 				color: "var(--text-color)",
 				overflowX: "auto",
 			}}>
@@ -56,11 +64,10 @@ const ReusableTable = ({
 			)}
 			<TableContainer
 				sx={{
-					maxHeight: 500,
 					maxWidth: 1500,
-					overflow: "auto", // enable scrolling
+					overflow: "auto",
 				}}>
-				<Table stickyHeader>
+				<Table>
 					<TableHead>
 						<TableRow>
 							{columns.map((column) => (
@@ -80,18 +87,22 @@ const ReusableTable = ({
 										{columns.map((column) => (
 											<TableCell
 												key={column.id}
-												align={column.align || "left"}>
+												align={column.align || "left"}
+												sx={{
+													color: "white",
+												}}>
 												<Skeleton variant='text' />
 											</TableCell>
 										))}
 									</TableRow>
 							  ))
-							: data.map((row) => (
+							: pagedData.map((row) => (
 									<TableRow key={keyExtractor ? keyExtractor(row) : row.id}>
 										{columns.map((column) => (
 											<TableCell
 												key={column.id}
-												align={column.align || "left"}>
+												align={column.align || "left"}
+												sx={column.sx}>
 												{column.render ? column.render(row) : row[column.id]}
 											</TableCell>
 										))}
@@ -118,6 +129,7 @@ const ReusableTable = ({
 					page={page}
 					onPageChange={onPageChange}
 					onRowsPerPageChange={onRowsPerPageChange}
+					sx={{ color: "var(--text-color)" }}
 				/>
 			)}
 		</Paper>

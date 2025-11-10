@@ -15,6 +15,10 @@ import {
 	Skeleton,
 	CircularProgress,
 	useTheme,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogTitle,
 } from "@mui/material";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -50,6 +54,7 @@ const Review = ({ onBackToSelect }) => {
 	const [isConfirming, setIsConfirming] = useState(false);
 	const navigate = useNavigate();
 	const dataServices = useMemo(() => createDataServices(), []);
+	const [fineDetails, setFineDetails] = useState(null);
 
 	// Redirect if essential data is missing
 	useEffect(() => {
@@ -64,6 +69,22 @@ const Review = ({ onBackToSelect }) => {
 	}, [formValues, navigate, showSnackbar]);
 
 	const handleConfirmBooking = async () => {
+		const getCoords = (location) => {
+			if (!location) return [null, null];
+			return location.location || location.position;
+		};
+
+		const pickupCoords = getCoords(formValues.pickupLocation);
+		const dropoffCoords = getCoords(formValues.dropoffLocation);
+
+		if (!pickupCoords[0] || !dropoffCoords[0]) {
+			showSnackbar(
+				"Invalid location data. Please select locations again.",
+				"error"
+			);
+			return;
+		}
+
 		setIsConfirming(true);
 		try {
 			const bookingData = {
@@ -72,10 +93,11 @@ const Review = ({ onBackToSelect }) => {
 				pickup_time: dayjs(formValues.pickupTime).format("HH:mm:ss"),
 				dropoff_date: dayjs(formValues.dropDate).format("YYYY-MM-DD"),
 				dropoff_time: dayjs(formValues.dropTime).format("HH:mm:ss"),
-				pickup_latitude: formValues.pickupLocation.location[0],
-				pickup_longitude: formValues.pickupLocation.location[1],
-				dropoff_latitude: formValues.dropoffLocation.location[0],
-				dropoff_longitude: formValues.dropoffLocation.location[1],
+				pickup_latitude: pickupCoords[0],
+				pickup_longitude: pickupCoords[1],
+				dropoff_latitude: dropoffCoords[0],
+				dropoff_longitude: dropoffCoords[1],
+				total_amount: costDetails.totalCost,
 			};
 
 			// Assuming you have a 'bookings' endpoint configured
@@ -109,21 +131,45 @@ const Review = ({ onBackToSelect }) => {
 	}, [formValues, formValues.vehicleType]);
 
 	const mapBounds = useMemo(() => {
+		const getCoords = (location) => {
+			if (!location) return null;
+			// Handle both { location: [lat, lng] } and { position: [lat, lng] }
+			return location.location || location.position;
+		};
+
 		const bounds = [];
-		if (formValues.pickupLocation) {
-			bounds.push([
-				formValues.pickupLocation.location[0],
-				formValues.pickupLocation.location[1],
-			]);
+		const pickupCoords = getCoords(formValues.pickupLocation);
+		const dropoffCoords = getCoords(formValues.dropoffLocation);
+
+		if (pickupCoords) {
+			bounds.push(pickupCoords);
 		}
-		if (formValues.dropoffLocation) {
-			bounds.push([
-				formValues.dropoffLocation.location[0],
-				formValues.dropoffLocation.location[1],
-			]);
+		if (dropoffCoords) {
+			bounds.push(dropoffCoords);
 		}
 		return bounds;
 	}, [formValues.pickupLocation, formValues.dropoffLocation]);
+
+	useEffect(() => {
+		const checkIsHaveFine = async () => {
+			try {
+				const response = await dataServices().retrieve(
+					API_ENDPOINTS.users.base,
+					API_ENDPOINTS.users.haveFine
+				);
+
+				if (response.data.have_fine && response.data.data["Total Fine"] > 0) {
+					setFineDetails(response.data.data);
+				}
+			} catch (err) {
+				// Fail silently if user is not logged in or there's an error.
+				// showSnackbar("Could not fetch fines status.", "error");
+			}
+		};
+		checkIsHaveFine();
+	}, []);
+
+
 
 	return (
 		<BookingLayout title='Review Your Booking'>
@@ -311,17 +357,55 @@ const Review = ({ onBackToSelect }) => {
 								variant='h5'
 								fontWeight='bold'
 								sx={{ my: 1 }}>
-								Total: {costDetails.totalCost.toFixed(2)} MMK
+								Total: {costDetails.totalCost.toFixed(2)} USD
 							</Typography>
 						</Box>
 					)}
 				</Paper>
+				{fineDetails && (
+					<Paper
+						variant='outlined'
+						sx={{ p: 3, mb: 3, borderColor: "error.main" }}>
+						<Typography
+							variant='h6'
+							fontWeight='bold'
+							color='error'
+							gutterBottom>
+							Outstanding Fines
+						</Typography>
+						<Typography color='error'>
+							You have outstanding fines that must be paid before you can make a
+							new booking.
+						</Typography>
+						<Box sx={{ mt: 2 }}>
+							<Typography color='error'>
+								No-show Fine: {fineDetails["No-show Fine"] || 0} USD
+							</Typography>
+							<Typography color='error'>
+								Cancellation Fine: {fineDetails["Cancellation Fine"] || 0} USD
+							</Typography>
+							<Typography
+								fontWeight='bold'
+								mt={1}
+								color='error'>
+								Total Fine: {fineDetails["Total Fine"]} USD
+							</Typography>
+						</Box>
+						<Button
+							variant='contained'
+							color='error'
+							onClick={() => navigate("/profile")}
+							sx={{ mt: 2 }}>
+							Pay Now
+						</Button>
+					</Paper>
+				)}
 				<Box sx={{ mt: 4, display: "flex", justifyContent: "flex-end" }}>
 					<Button
 						variant='contained'
 						color='primary'
 						size='large'
-						disabled={isConfirming}
+						disabled={isConfirming || fineDetails}
 						onClick={handleConfirmBooking}
 						sx={{ minWidth: 180 }}>
 						{isConfirming ? (
