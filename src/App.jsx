@@ -11,6 +11,7 @@ import { IntroFormProvider } from "./contexts/IntroFormProvider";
 import UserManagement from "./view/admin/components/UserManagement";
 import CarManagement from "./view/admin/components/CarManagement";
 import History from "./history/History";
+import TaskManagement from "./view/admin/components/TaskManagement";
 
 const Home = lazy(() => import("./view/home/Home"));
 const Login = lazy(() => import("./view/login/Login"));
@@ -156,7 +157,7 @@ const router = createBrowserRouter([
 			},
 			{
 				path: "task-management",
-				element: <h1>Hello</h1>,
+				element: <TaskManagement />,
 			},
 		],
 	},

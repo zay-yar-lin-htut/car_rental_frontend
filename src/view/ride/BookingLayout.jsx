@@ -3,10 +3,16 @@ import { Box, Typography, Paper } from "@mui/material";
 
 const BookingLayout = ({ title, children }) => {
 	return (
-		<Box sx={{ py: 5, px: 2, bgcolor: "white", minHeight: "100vh" }}>
+		<Box
+			sx={{
+				py: 5,
+				px: 2,
+				minHeight: "100vh",
+				bgcolor: "var(--background-paper)",
+			}}>
 			<Paper
 				sx={{
-					p: { xs: 2, md: 4 },
+					py: { xs: 2, md: 4 },
 					maxWidth: "lg",
 					mx: "auto",
 					borderRadius: 3,

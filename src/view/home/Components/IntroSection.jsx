@@ -61,7 +61,7 @@ const FutureDatePicker = ({
 			label={label}
 			value={value}
 			onChange={onChange}
-			minDate={minDate || dayjs()}
+			minDate={minDate || dayjs().add(1, "day")}
 			maxDate={maxDate}
 			slotProps={{
 				...slotProps,
@@ -300,9 +300,7 @@ const IntroSection = () => {
 									}
 									label={
 										<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-											<p className='text-black'>
-												Dropoff at the same location
-											</p>
+											<p className='text-black'>Dropoff at the same location</p>
 										</Box>
 									}
 								/>

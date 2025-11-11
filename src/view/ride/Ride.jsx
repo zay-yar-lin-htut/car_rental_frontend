@@ -227,7 +227,6 @@ const Ride = () => {
 	if (isReviewing) {
 		return <Review onBackToSelect={handleBackToSelect} />;
 	}
-	console.log("FormValue", formValues);
 
 	return (
 		<BookingLayout title='Choose Your Vehicle'>
@@ -239,6 +238,8 @@ const Ride = () => {
 					alignItems: "center",
 					mb: 2,
 					gap: 2,
+					p: 3,
+					bgcolor: "#507687",
 				}}>
 				<Box
 					sx={{
@@ -282,7 +283,9 @@ const Ride = () => {
 						setPage(1);
 						setAsc(!asc);
 					}}
-					variant='contained'>
+					variant='contained'
+					color='inherit'>
+					{" "}
 					{asc ? "Price: Low to High" : "Price: High to Low"}
 				</Button>
 			</Box>

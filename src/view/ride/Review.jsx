@@ -20,32 +20,11 @@ import {
 	DialogContent,
 	DialogTitle,
 } from "@mui/material";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
 import { createDataServices } from "../../services/DataServices";
 import { API_ENDPOINTS } from "../../services/Configuration";
 import BookingLayout from "./BookingLayout";
 import { calculateRentalCost } from "./costCalculator";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
-
-// Fix for default Leaflet icon path issue with Webpack
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-	iconRetinaUrl: markerIcon2x,
-	iconUrl: markerIcon,
-	shadowUrl: markerShadow,
-});
-
-const RecenterAutomatically = ({ bounds }) => {
-	const map = useMap();
-	useEffect(() => {
-		if (bounds.length > 0) map.fitBounds(bounds);
-	}, [bounds, map]);
-	return null;
-};
+import TaskMap from "../admin/components/TaskMap";
 
 const Review = ({ onBackToSelect }) => {
 	const { formValues, resetForm } = useIntroForm();
@@ -55,6 +34,9 @@ const Review = ({ onBackToSelect }) => {
 	const navigate = useNavigate();
 	const dataServices = useMemo(() => createDataServices(), []);
 	const [fineDetails, setFineDetails] = useState(null);
+
+	const isDifferentDropoff = !formValues.dropSameAsPickup;
+	const isOneWayRental = formValues.pickupLocation && isDifferentDropoff;
 
 	// Redirect if essential data is missing
 	useEffect(() => {
@@ -67,6 +49,7 @@ const Review = ({ onBackToSelect }) => {
 			navigate("/");
 		}
 	}, [formValues, navigate, showSnackbar]);
+	console.log("FormValue", formValues);
 
 	const handleConfirmBooking = async () => {
 		const getCoords = (location) => {
@@ -130,24 +113,17 @@ const Review = ({ onBackToSelect }) => {
 		return calculateRentalCost(formValues, formValues.vehicleType);
 	}, [formValues, formValues.vehicleType]);
 
-	const mapBounds = useMemo(() => {
+	const { startLocation, endLocation } = useMemo(() => {
 		const getCoords = (location) => {
 			if (!location) return null;
-			// Handle both { location: [lat, lng] } and { position: [lat, lng] }
-			return location.location || location.position;
+			const coords = location.location || location.position;
+			return coords ? { lat: coords[0], lng: coords[1] } : null;
 		};
 
-		const bounds = [];
-		const pickupCoords = getCoords(formValues.pickupLocation);
-		const dropoffCoords = getCoords(formValues.dropoffLocation);
-
-		if (pickupCoords) {
-			bounds.push(pickupCoords);
-		}
-		if (dropoffCoords) {
-			bounds.push(dropoffCoords);
-		}
-		return bounds;
+		return {
+			startLocation: getCoords(formValues.pickupLocation),
+			endLocation: getCoords(formValues.dropoffLocation),
+		};
 	}, [formValues.pickupLocation, formValues.dropoffLocation]);
 
 	useEffect(() => {
@@ -169,66 +145,15 @@ const Review = ({ onBackToSelect }) => {
 		checkIsHaveFine();
 	}, []);
 
-
-
 	return (
 		<BookingLayout title='Review Your Booking'>
-			<>
-				{/* Left column - rental details */}
-				<Paper
-					variant='outlined'
-					sx={{ p: 3, mb: 3, bgcolor: "background.paper" }}>
-					<Typography
-						variant='h6'
-						fontWeight='bold'
-						gutterBottom>
-						Rental Details
-					</Typography>
-
-					<Box sx={{ mb: 2 }}>
-						<Typography
-							variant='subtitle2'
-							color='text.secondary'>
-							Dates & Times
-						</Typography>
-						<Typography
-							variant='body2'
-							color='text.secondary'>
-							{`${formatDate(formValues.pickupDate)} @ ${formatTime(
-								formValues.pickupTime
-							)} — ${formatDate(formValues.dropDate)} @ ${formatTime(
-								formValues.dropTime
-							)}`}
-						</Typography>
-						<Button
-							size='small'
-							onClick={onBackToSelect}>
-							Edit
-						</Button>
-					</Box>
-
-					<Divider sx={{ my: 1 }} />
-
-					<Box sx={{ mb: 2 }}>
-						<Typography
-							variant='subtitle2'
-							color='text.secondary'>
-							Pick-up & Return Location
-						</Typography>
-						<Typography
-							variant='body2'
-							color='text.secondary'>
-							<strong>From:</strong> {formValues.pickupLocation?.location_name}
-							<br />
-							<strong>To:</strong>{" "}
-							{formValues.dropSameAsPickup
-								? formValues.pickupLocation?.location_name
-								: formValues.dropoffLocation?.location_name}
-						</Typography>
-					</Box>
-				</Paper>
-
-				{mapBounds.length === 0 ? (
+			<Box
+				sx={{
+					p: 3,
+				}}>
+				{/*  Row: Rental Details and Cost Summary (Full Width) */}
+				<Box sx={{ width: "100%" }}>
+					{/* Rental Details */}
 					<Paper
 						variant='outlined'
 						sx={{ p: 3, mb: 3, bgcolor: "background.paper" }}>
@@ -236,132 +161,159 @@ const Review = ({ onBackToSelect }) => {
 							variant='h6'
 							fontWeight='bold'
 							gutterBottom>
-							Route Overview
+							Rental Details
 						</Typography>
-						<Skeleton
-							variant='rectangular'
-							height={300}
-						/>
-					</Paper>
-				) : (
-					<Paper
-						variant='outlined'
-						sx={{ p: 3, mb: 3, bgcolor: "background.paper" }}>
-						<Typography
-							variant='h6'
-							fontWeight='bold'
-							gutterBottom>
-							Route Overview
-						</Typography>
-						<Box
-							sx={{
-								height: 300,
-								width: "100%",
-								borderRadius: 2,
-								overflow: "hidden",
-							}}>
-							<MapContainer
-								bounds={mapBounds}
-								style={{ height: "100%", width: "100%" }}
-								scrollWheelZoom={false}>
-								<TileLayer
-									url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-									attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-								/>
-								<Marker position={mapBounds[0]}>
-									<Popup>
-										Pickup: {formValues.pickupLocation.location_name}
-									</Popup>
-								</Marker>
-								{mapBounds.length > 1 &&
-									JSON.stringify(mapBounds[0]) !==
-										JSON.stringify(mapBounds[1]) && (
-										<Marker position={mapBounds[1]}>
-											<Popup>
-												Drop-off: {formValues.dropoffLocation.location_name}
-											</Popup>
-										</Marker>
-									)}
-								<RecenterAutomatically bounds={mapBounds} />
-							</MapContainer>
-						</Box>
-					</Paper>
-				)}
-
-				{/* Vehicle Details */}
-				<Paper
-					variant='outlined'
-					sx={{ p: 3, mb: 3, bgcolor: "background.paper" }}>
-					<Typography
-						variant='h6'
-						fontWeight='bold'
-						gutterBottom>
-						Vehicle Details
-						<Button
-							size='small'
-							onClick={onBackToSelect}>
-							Change
-						</Button>
-					</Typography>
-					<Card
-						variant='outlined'
-						sx={{
-							border: `1px solid ${theme.palette.divider}`,
-						}}>
-						<CardMedia
-							component='img'
-							image={dataServices.retrieveImage(
-								formValues.vehicleType.car_type_image_url
-							)}
-							sx={{
-								height: 180,
-								objectFit: "contain",
-								p: 1,
-								borderRadius: 2,
-							}}
-							alt={formValues.vehicleType.type_name}
-						/>
-						<CardContent>
+						<Box sx={{ mb: 2 }}>
 							<Typography
-								variant='h6'
-								fontWeight='bold'>
-								{formValues.vehicleType.type_name}
-							</Typography>
-							<Typography
-								variant='body2'
+								variant='body1'
+								fontWeight='medium'
 								color='text.secondary'>
-								{formValues.vehicleType.description}
+								Dates & Times
 							</Typography>
-						</CardContent>
-					</Card>
-				</Paper>
-
-				{/* Right column - contact details */}
-				<Paper
-					variant='outlined'
-					sx={{ p: 3, mb: 3, bgcolor: "background.paper" }}>
-					<Typography
-						variant='h6'
-						fontWeight='bold'
-						gutterBottom>
-						Cost Summary
-					</Typography>
-					{costDetails && (
+							<Typography variant='body1'>
+								{`${formatDate(formValues.pickupDate)} @ ${formatTime(
+									formValues.pickupTime
+								)} — ${formatDate(formValues.dropDate)} @ ${formatTime(
+									formValues.dropTime
+								)}`}
+							</Typography>
+						</Box>
+						<Divider sx={{ my: 2 }} />
 						<Box>
 							<Typography
-								variant='body2'
+								variant='body1'
+								fontWeight='medium'
 								color='text.secondary'>
-								{costDetails.calculationText}
+								Pick-up & Return Location
 							</Typography>
-							<Typography
-								variant='h5'
-								fontWeight='bold'
-								sx={{ my: 1 }}>
-								Total: {costDetails.totalCost.toFixed(2)} USD
+							<Typography variant='body1'>
+								<strong>From:</strong> {formValues.pickupLocation?.name}
+								<br />
+								<strong>To:</strong>{" "}
+								{formValues.dropSameAsPickup
+									? formValues.pickupLocation?.name
+									: formValues.dropoffLocation?.name}
 							</Typography>
 						</Box>
-					)}
-				</Paper>
+					</Paper>
+				</Box>
+
+				{/* Top Row: Vehicle Details and Map */}
+				<Box
+					sx={{
+						display: "flex",
+						flexDirection: { xs: "column", md: "row" },
+						gap: 3,
+						mb: 3, // Add margin bottom for spacing from the next section
+					}}>
+					{/* Left Column: Vehicle Details (40% width on medium screens and up) */}
+					<Box sx={{ width: { xs: "100%", md: "40%" } }}>
+						<Paper
+							variant='outlined'
+							sx={{ p: 3, mb: 3, bgcolor: "background.paper" }}>
+							<Typography
+								variant='h6'
+								fontWeight='bold'
+								gutterBottom>
+								Route Overview
+							</Typography>
+							<Box
+								sx={{
+									height: 300,
+									width: "100%",
+									borderRadius: 2,
+									overflow: "hidden",
+								}}>
+								<TaskMap
+									start={startLocation}
+									end={isOneWayRental ? endLocation : startLocation}
+									type={isOneWayRental ? "Drop-off" : "Pickup"}
+								/>
+							</Box>
+						</Paper>
+					</Box>
+
+					{/* Right Column: Map and Route (60% width on medium screens and up) */}
+					<Box sx={{ width: { xs: "100%", md: "60%" } }}>
+						{/* Vehicle Details */}
+						<Paper
+							variant='outlined'
+							sx={{ p: 3, mb: 3, bgcolor: "background.paper" }}>
+							<Box
+								sx={{
+									display: "flex",
+									justifyContent: "space-between",
+									alignItems: "center",
+								}}>
+								<Typography
+									variant='h6'
+									fontWeight='bold'
+									gutterBottom>
+									Vehicle Details
+								</Typography>
+							</Box>
+							<Card
+								variant='outlined'
+								sx={{ border: `1px solid ${theme.palette.divider}` }}>
+								<CardMedia
+									component='img'
+									image={dataServices.retrieveImage(
+										formValues.vehicleType.car_type_image_url
+									)}
+									sx={{
+										height: 240,
+										objectFit: "contain",
+										p: 1,
+										borderRadius: 2,
+									}}
+									alt={formValues.vehicleType.type_name}
+								/>
+								<CardContent>
+									<Typography
+										variant='h6'
+										fontWeight='bold'>
+										{formValues.vehicleType.type_name}
+									</Typography>
+									<Typography
+										variant='body1'
+										color='text.secondary'>
+										{formValues.vehicleType.description}
+									</Typography>
+								</CardContent>
+							</Card>
+						</Paper>
+					</Box>
+				</Box>
+
+				<Box sx={{ width: "100%" }}>
+					{/* Cost Summary */}
+					<Paper
+						variant='outlined'
+						sx={{ p: 3, mb: 3, bgcolor: "background.paper" }}>
+						<Typography
+							variant='h6'
+							fontWeight='bold'
+							gutterBottom>
+							Cost Summary
+						</Typography>
+						{costDetails && (
+							<Box>
+								<Typography
+									variant='body1'
+									color='text.secondary'>
+									{costDetails.calculationText}
+								</Typography>
+								<Typography
+									variant='h5'
+									fontWeight='bold'
+									sx={{ my: 1 }}>
+									Total: {costDetails.totalCost.toFixed(2)} USD
+								</Typography>
+							</Box>
+						)}
+					</Paper>
+				</Box>
+
 				{fineDetails && (
 					<Paper
 						variant='outlined'
@@ -391,13 +343,13 @@ const Review = ({ onBackToSelect }) => {
 								Total Fine: {fineDetails["Total Fine"]} USD
 							</Typography>
 						</Box>
-						<Button
+						{/* <Button
 							variant='contained'
 							color='error'
 							onClick={() => navigate("/profile")}
 							sx={{ mt: 2 }}>
 							Pay Now
-						</Button>
+						</Button> */}
 					</Paper>
 				)}
 				<Box sx={{ mt: 4, display: "flex", justifyContent: "flex-end" }}>
@@ -418,7 +370,7 @@ const Review = ({ onBackToSelect }) => {
 						)}
 					</Button>
 				</Box>
-			</>
+			</Box>
 		</BookingLayout>
 	);
 };
