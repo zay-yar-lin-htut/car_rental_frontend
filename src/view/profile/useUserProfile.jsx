@@ -15,11 +15,13 @@ export const useUserProfile = () => {
 	const [openDialog, setOpenDialog] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isUpload, setIsUpload] = useState(true);
+	const [fineDetails, setFineDetails] = useState(null);
 
 	const fetchUserProfile = useCallback(async () => {
 		setProfileLoading(true);
 		try {
 			const response = await dataServices.retrieve(
+				API_ENDPOINTS.user.base,
 				API_ENDPOINTS.users.getUserProfile
 			);
 			setUser(response.data);
@@ -31,13 +33,30 @@ export const useUserProfile = () => {
 		}
 	}, [showSnackbar]);
 
+	const checkIsHaveFine = useCallback(async () => {
+		try {
+			const response = await dataServices.retrieve(
+				API_ENDPOINTS.users.base,
+				API_ENDPOINTS.users.haveFine
+			);
+
+			if (response.data.have_fine && response.data.data["Total Fine"] > 0) {
+				setFineDetails(response.data.data);
+			}
+		} catch (err) {
+			// Fail silently if user is not logged in or there's an error.
+			// showSnackbar("Could not fetch fines status.", "error");
+		}
+	}, []);
+
 	useEffect(() => {
 		if (!user) {
 			fetchUserProfile();
 		} else {
 			setProfileLoading(false);
 		}
-	}, [user, fetchUserProfile]);
+		checkIsHaveFine();
+	}, [user, fetchUserProfile, checkIsHaveFine]);
 
 	const handleOpenDialog = useCallback(() => {
 		if (isSaving) return;
@@ -128,5 +147,6 @@ export const useUserProfile = () => {
 		handleProfileUpdate,
 		isUpload,
 		setIsUpload,
+		fineDetails,
 	};
 };

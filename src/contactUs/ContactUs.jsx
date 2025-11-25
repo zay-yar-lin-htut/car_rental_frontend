@@ -9,15 +9,22 @@ import {
 	DialogContent,
 	DialogActions,
 	DialogTitle,
+	CircularProgress, // Import CircularProgress
 } from "@mui/material";
+import { createDataServices } from "../services/DataServices";
+import { API_ENDPOINTS } from "../services/Configuration";
+import { useSnackbar } from "../contexts/ErrorMessage"; // Import useSnackbar
 
 const ContactUs = ({ open, onClose }) => {
+	const dataServices = createDataServices();
+	const { showSnackbar } = useSnackbar(); // Use the snackbar hook
 	const [formValues, setFormValues] = useState({
-		name: "",
+		title: "",
 		email: "",
 		phone: "",
 		description: "",
 	});
+	const [loading, setLoading] = useState(false); // Add loading state
 
 	const handleChange = (event) => {
 		const { name, value } = event.target;
@@ -27,19 +34,29 @@ const ContactUs = ({ open, onClose }) => {
 		});
 	};
 
-	const handleSubmit = (event) => {
+	const handleSubmit = async (event) => {
 		event.preventDefault();
-		// Handle form submission logic here
-		console.log("Form Submitted:", formValues);
-		alert("Thank you for your message!");
-		// Reset form
-		setFormValues({ name: "", email: "", phone: "", description: "" });
-		onClose();
+		setLoading(true); // Set loading to true on submission
+		try {
+			const res = await dataServices.retrievePOST(
+				formValues,
+				API_ENDPOINTS.auth.contact
+			);
+			console.log(res);
+			showSnackbar("Message sent successfully!", "success"); // Show success message
+			// Reset form
+			setFormValues({ title: "", email: "", phone: "", description: "" });
+			onClose();
+		} catch (error) {
+			showSnackbar(error.message || "Failed to send message.", "error"); // Show error message
+		} finally {
+			setLoading(false); // Set loading to false after submission
+		}
 	};
 
 	const handleCancel = () => {
 		// Reset form
-		setFormValues({ name: "", email: "", phone: "", description: "" });
+		setFormValues({ title: "", email: "", phone: "", description: "" });
 		onClose();
 	};
 
@@ -47,14 +64,11 @@ const ContactUs = ({ open, onClose }) => {
 		<Dialog
 			open={open}
 			onClose={onClose}
-			maxWidth='lg'
+			maxWidth='sm'
 			fullWidth
 			PaperProps={{
 				sx: {
-					backgroundColor: "rgba(255, 255, 255, 0.2)",
-					backdropFilter: "blur(10px)",
-					boxShadow: "0 8px 32px 0 rgba( 31, 38, 135, 0.37 )",
-					border: "1px solid rgba( 255, 255, 255, 0.18 )",
+					backgroundColor: "var(--background-paper)",
 					zIndex: 1000,
 				},
 			}}>
@@ -64,7 +78,7 @@ const ContactUs = ({ open, onClose }) => {
 					component='h1'
 					sx={{
 						typography: { xs: "h4", sm: "h3" },
-						color: "white",
+						color: "var(--text-color)",
 					}}
 					gutterBottom
 					align='center'
@@ -74,35 +88,13 @@ const ContactUs = ({ open, onClose }) => {
 				<Box
 					sx={{
 						display: "flex",
-						flexDirection: { xs: "column", md: "row" },
-						gap: 4,
+						flexDirection: "column", // Changed to column as there's only one section
+						gap: 3, // Adjusted gap
 						alignItems: "center",
 						mt: 0,
 					}}>
-					{/* Left side: Image */}
-					<Box
-						sx={{
-							width: { xs: "100%", md: "50%" },
-							display: "flex",
-							justifyContent: "center",
-							alignItems: "center",
-							height: "100%",
-						}}>
-						<Box
-							component='img'
-							sx={{
-								width: 400,
-								height: 400,
-								borderRadius: "50%",
-								objectFit: "cover",
-							}}
-							alt='Contact us'
-							src='https://images.unsplash.com/photo-1596524430615-b46475ddff6e?q=80&w=2070&auto=format&fit=crop' // Placeholder image
-						/>
-					</Box>
-
-					{/* Right side: Form */}
-					<Box sx={{ width: { xs: "100%", md: "50%" } }}>
+					{/* Form section now takes full width */}
+					<Box sx={{ width: "100%" }}>
 						<Box
 							component='form'
 							onSubmit={handleSubmit}
@@ -116,71 +108,13 @@ const ContactUs = ({ open, onClose }) => {
 							<TextField
 								fullWidth
 								required
-								id='name'
-								name='name'
-								label='Name'
-								value={formValues.name}
-								onChange={handleChange}
-								InputLabelProps={{
-									style: { color: "white" },
-								}}
-								inputProps={{
-									style: { color: "white" },
-								}}
-								sx={{
-									"& label.Mui-focused": {
-										color: "white",
-									},
-									"& .MuiInput-underline:after": {
-										borderBottomColor: "white",
-									},
-									"& .MuiOutlinedInput-root": {
-										"& fieldset": {
-											borderColor: "white",
-										},
-										"&:hover fieldset": {
-											borderColor: "white",
-										},
-										"&.Mui-focused fieldset": {
-											borderColor: "white",
-										},
-									},
-								}}
-							/>
-							<TextField
-								fullWidth
-								required
 								id='email'
 								name='email'
 								label='Email'
 								type='email'
 								value={formValues.email}
 								onChange={handleChange}
-								InputLabelProps={{
-									style: { color: "white" },
-								}}
-								inputProps={{
-									style: { color: "white" },
-								}}
-								sx={{
-									"& label.Mui-focused": {
-										color: "white",
-									},
-									"& .MuiInput-underline:after": {
-										borderBottomColor: "white",
-									},
-									"& .MuiOutlinedInput-root": {
-										"& fieldset": {
-											borderColor: "white",
-										},
-										"&:hover fieldset": {
-											borderColor: "white",
-										},
-										"&.Mui-focused fieldset": {
-											borderColor: "white",
-										},
-									},
-								}}
+								disabled={loading} // Disable field during loading
 							/>
 							<TextField
 								fullWidth
@@ -190,31 +124,17 @@ const ContactUs = ({ open, onClose }) => {
 								type='tel'
 								value={formValues.phone}
 								onChange={handleChange}
-								InputLabelProps={{
-									style: { color: "white" },
-								}}
-								inputProps={{
-									style: { color: "white" },
-								}}
-								sx={{
-									"& label.Mui-focused": {
-										color: "white",
-									},
-									"& .MuiInput-underline:after": {
-										borderBottomColor: "white",
-									},
-									"& .MuiOutlinedInput-root": {
-										"& fieldset": {
-											borderColor: "white",
-										},
-										"&:hover fieldset": {
-											borderColor: "white",
-										},
-										"&.Mui-focused fieldset": {
-											borderColor: "white",
-										},
-									},
-								}}
+								disabled={loading} // Disable field during loading
+							/>
+							<TextField
+								fullWidth
+								required
+								id='title'
+								name='title'
+								label='Title'
+								value={formValues.title}
+								onChange={handleChange}
+								disabled={loading} // Disable field during loading
 							/>
 							<TextField
 								fullWidth
@@ -226,31 +146,7 @@ const ContactUs = ({ open, onClose }) => {
 								rows={4}
 								value={formValues.description}
 								onChange={handleChange}
-								InputLabelProps={{
-									style: { color: "white" },
-								}}
-								inputProps={{
-									style: { color: "white" },
-								}}
-								sx={{
-									"& label.Mui-focused": {
-										color: "white",
-									},
-									"& .MuiInput-underline:after": {
-										borderBottomColor: "white",
-									},
-									"& .MuiOutlinedInput-root": {
-										"& fieldset": {
-											borderColor: "white",
-										},
-										"&:hover fieldset": {
-											borderColor: "white",
-										},
-										"&.Mui-focused fieldset": {
-											borderColor: "white",
-										},
-									},
-								}}
+								disabled={loading} // Disable field during loading
 							/>{" "}
 							<Box sx={{ flexGrow: 1 }} /> {/* Spacer */}
 						</Box>
@@ -269,28 +165,17 @@ const ContactUs = ({ open, onClose }) => {
 					<Button
 						variant='outlined'
 						onClick={handleCancel}
-						sx={{
-							borderColor: "white",
-							color: "white",
-							"&:hover": {
-								backgroundColor: "white",
-								color: "black",
-							},
-						}}>
+						disabled={loading} // Disable button during loading
+						>
 						Cancel
 					</Button>
 					<Button
 						type='submit'
 						variant='contained'
 						onClick={handleSubmit}
-						sx={{
-							backgroundColor: "white",
-							color: "black",
-							"&:hover": {
-								backgroundColor: "white",
-								color: "black",
-							},
-						}}>
+						disabled={loading} // Disable button during loading
+						startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null} // Show loading indicator
+						>
 						Submit
 					</Button>
 				</Box>

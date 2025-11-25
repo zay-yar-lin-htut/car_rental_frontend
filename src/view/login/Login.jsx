@@ -10,7 +10,10 @@ import {
 	Stack,
 	Alert,
 	Paper,
+	InputAdornment,
+	IconButton,
 } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { LoadingButton } from "@mui/lab";
 
 // Assuming these are correctly set up in your project
@@ -18,6 +21,7 @@ import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
 import { createDataServices } from "../../services/DataServices";
 import { useSnackbar } from "../../contexts/ErrorMessage";
 import VideoBackground1 from "../common/Background1";
+import { useUserRole } from "../../contexts/userRoleContext";
 
 const dataServices = createDataServices();
 
@@ -25,11 +29,13 @@ const Login = () => {
 	// --- State and Logic (unchanged) ---
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
+	const [showPassword, setShowPassword] = useState(false);
 	const [rememberMe, setRememberMe] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 	const navigate = useNavigate();
 	const { showSnackbar } = useSnackbar();
+	const { updateRole } = useUserRole();
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
@@ -41,13 +47,16 @@ const Login = () => {
 				API_ENDPOINTS.auth.login
 			);
 			showSnackbar(response.message, "success");
-			AUTH_CONFIG.setToken(response.data.token);
-			AUTH_CONFIG.setUserData(response.data.user);
+			AUTH_CONFIG.setToken(response.data.token, rememberMe);
+			AUTH_CONFIG.setUserData(response.data.user, rememberMe);
+
+			// Explicitly update the role in the context before navigating
+			updateRole(response.data.user);
 
 			if (response.data.user.user_type_id === 3) {
 				navigate("/admin/user-management");
 			} else if (response.data.user.user_type_id === 2) {
-				navigate("/staff/task-management");
+				navigate("/admin/task-management");
 			} else {
 				navigate("/");
 			}
@@ -87,7 +96,7 @@ const Login = () => {
 				component='form'
 				noValidate
 				onSubmit={handleSubmit}
-				elevation={12}
+				elevation={3}
 				sx={{
 					p: { xs: 3, sm: 4 },
 					display: "flex",
@@ -95,14 +104,11 @@ const Login = () => {
 					alignItems: "center",
 					maxWidth: 420,
 					width: "100%",
-					borderRadius: 4,
+					borderRadius: 2,
 					position: "relative",
-					zIndex: 2, // Sits on top of the overlay
-					// The "Frosted Glass" effect
-					backgroundColor: "rgba(255, 255, 255, 0.1)",
-					backdropFilter: "blur(10px)",
-					border: "1px solid rgba(255, 255, 255, 0.2)",
-					color: "white",
+					zIndex: 2,
+					backgroundColor: "var(--background-paper)",
+					color: "var(--text-color)",
 				}}>
 				<Typography
 					component='h1'
@@ -112,13 +118,13 @@ const Login = () => {
 				</Typography>
 				<Typography
 					variant='body2'
-					sx={{ mt: 1, color: "grey.300" }}>
+					sx={{ mt: 1, color: "var(--text-secondary-color)" }}>
 					New here?{" "}
 					<Link
 						to='/register'
 						style={{
 							textDecoration: "none",
-							color: "#64b5f6",
+							color: "var(--primary-color)",
 							fontWeight: 600,
 						}}>
 						Create an account
@@ -131,9 +137,6 @@ const Login = () => {
 							severity='error'
 							sx={{
 								mb: 2,
-								bgcolor: "rgba(255, 179, 179, 0.1)",
-								color: "white",
-								border: "1px solid rgba(255, 128, 128, 0.5)",
 							}}>
 							{error}
 						</Alert>
@@ -158,13 +161,26 @@ const Login = () => {
 						fullWidth
 						name='password'
 						label='Password'
-						type='password'
+						type={showPassword ? "text" : "password"}
 						id='password'
 						autoComplete='current-password'
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
 						error={!!error}
 						sx={customTextFieldStyle}
+						InputProps={{
+							endAdornment: (
+								<InputAdornment position='end'>
+									<IconButton
+										aria-label='toggle password visibility'
+										onClick={() => setShowPassword(!showPassword)}
+										onMouseDown={(e) => e.preventDefault()}
+										edge='end'>
+										{showPassword ? <VisibilityOff /> : <Visibility />}
+									</IconButton>
+								</InputAdornment>
+							),
+						}}
 					/>
 					<Stack
 						direction='row'
@@ -176,8 +192,8 @@ const Login = () => {
 								<Checkbox
 									value='remember'
 									sx={{
-										color: "grey.400",
-										"&.Mui-checked": { color: "white" },
+										color: "var(--text-secondary-color)",
+										"&.Mui-checked": { color: "var(--primary-color)" },
 									}}
 									checked={rememberMe}
 									onChange={(e) => setRememberMe(e.target.checked)}
@@ -186,7 +202,7 @@ const Login = () => {
 							label={
 								<Typography
 									variant='body2'
-									sx={{ color: "grey.200" }}>
+									sx={{ color: "var(--text-secondary-color)" }}>
 									Remember me
 								</Typography>
 							}
@@ -197,7 +213,7 @@ const Login = () => {
 							<Typography
 								variant='body2'
 								sx={{
-									color: "#64b5f6",
+									color: "var(--primary-color)",
 									"&:hover": { textDecoration: "underline" },
 								}}>
 								Forgot password?
@@ -215,10 +231,10 @@ const Login = () => {
 							mb: 2,
 							fontSize: "1rem",
 							fontWeight: "bold",
-							bgcolor: "rgba(255, 255, 255, 0.9)",
-							color: "black",
-							"&:hover": { bgcolor: "white" },
-							"&.Mui-disabled": { bgcolor: "rgba(255, 255, 255, 0.5)" },
+							bgcolor: "var(--primary-color)",
+							color: "var(--primary-contrast-text)",
+							"&:hover": { bgcolor: "var(--primary-color)" },
+							"&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" },
 						}}>
 						Sign In
 					</LoadingButton>
@@ -229,13 +245,13 @@ const Login = () => {
 };
 
 const customTextFieldStyle = {
-	"& .MuiInputBase-input": { color: "white" },
-	"& .MuiInputLabel-root": { color: "grey.400" },
-	"& .MuiInputLabel-root.Mui-focused": { color: "white" },
+	"& .MuiInputBase-input": { color: "var(--text-color)" },
+	"& .MuiInputLabel-root": { color: "var(--text-secondary-color)" },
+	"& .MuiInputLabel-root.Mui-focused": { color: "var(--primary-color)" },
 	"& .MuiOutlinedInput-root": {
-		"& fieldset": { borderColor: "rgba(255, 255, 255, 0.3)" },
-		"&:hover fieldset": { borderColor: "rgba(255, 255, 255, 0.5)" },
-		"&.Mui-focused fieldset": { borderColor: "white" },
+		"& fieldset": { borderColor: "var(--divider-color)" },
+		"&:hover fieldset": { borderColor: "var(--primary-color)" },
+		"&.Mui-focused fieldset": { borderColor: "var(--primary-color)" },
 	},
 };
 

@@ -1,61 +1,70 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { createDataServices } from '../services/DataServices';
-import { API_ENDPOINTS } from '../services/Configuration';
-import { useSnackbar } from './ErrorMessage';
+import React, { createContext, useState, useEffect, useContext, useRef } from "react";
+import { createDataServices } from "../services/DataServices";
+import { API_ENDPOINTS } from "../services/Configuration";
+import { useSnackbar } from "./ErrorMessage";
 
 const CarTypeContext = createContext();
 const dataServices = createDataServices();
 export const CarTypeProvider = ({ children }) => {
-    const [carTypes, setCarTypes] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const { showSnackbar } = useSnackbar();
+	const [carTypes, setCarTypes] = useState([]);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
+	const { showSnackbar } = useSnackbar();
 
-    useEffect(() => {
-        const fetchCarTypes = async () => {
-            try {
-                setLoading(true);
-                const response = await dataServices.retrieve(
-                    API_ENDPOINTS.carTypes.base,
-                    API_ENDPOINTS.carTypes.getAll
-                );
-                setCarTypes(response.data || []);
-                setError(null);
-            } catch (err) {
-                const errorMessage = err.message || 'Failed to fetch car types.';
-                setError(errorMessage);
-                showSnackbar(errorMessage, 'error');
-            } finally {
-                setLoading(false);
-            }
-        };
+    const effectRan = useRef(false);
 
-        fetchCarTypes();
-    }, [showSnackbar]);
+	useEffect(() => {
+        if (effectRan.current === false) {
+            const fetchCarTypes = async () => {
+                try {
+                    setLoading(true);
+                    const response = await dataServices.retrieve(
+                        API_ENDPOINTS.carTypes.base,
+                        API_ENDPOINTS.carTypes.getAll
+                    );
+                    setCarTypes(response.data || []);
+                    setError(null);
+                } catch (err) {
+                    const errorMessage = err.message || "Failed to fetch car types.";
+                    setError(errorMessage);
+                    showSnackbar(errorMessage, "error");
+                } finally {
+                    setLoading(false);
+                }
+            };
 
-    const refreshCarTypes = async () => {
-        // Function to manually refresh the car types list
-        setLoading(true);
-        try {
-            const response = await dataServices.retrieve(
-                API_ENDPOINTS.carTypes.base,
-                API_ENDPOINTS.carTypes.getAll
-            );
-            setCarTypes(response.data || []);
-            setError(null);
-        } catch (err) {
-            const errorMessage = err.message || 'Failed to refetch car types.';
-            setError(errorMessage);
-            showSnackbar(errorMessage, 'error');
+            fetchCarTypes();
+
+            return () => {
+                effectRan.current = true;
+            };
         }
-        setLoading(false);
-    };
+	}, []);
 
-    return (
-        <CarTypeContext.Provider value={{ carTypes, loading, error, refreshCarTypes }}>
-            {children}
-        </CarTypeContext.Provider>
-    );
-}
+	const refreshCarTypes = async () => {
+		// Function to manually refresh the car types list
+		setLoading(true);
+		try {
+			const response = await dataServices.retrieve(
+				API_ENDPOINTS.carTypes.base,
+				API_ENDPOINTS.carTypes.getAll
+			);
+			setCarTypes(response.data || []);
+			setError(null);
+		} catch (err) {
+			const errorMessage = err.message || "Failed to refetch car types.";
+			setError(errorMessage);
+			showSnackbar(errorMessage, "error");
+		}
+		setLoading(false);
+	};
+
+	return (
+		<CarTypeContext.Provider
+			value={{ carTypes, loading, error, refreshCarTypes }}>
+			{children}
+		</CarTypeContext.Provider>
+	);
+};
 
 export const useCarType = () => useContext(CarTypeContext);

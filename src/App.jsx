@@ -12,6 +12,8 @@ import UserManagement from "./view/admin/components/UserManagement";
 import CarManagement from "./view/admin/components/CarManagement";
 import History from "./history/History";
 import TaskManagement from "./view/admin/components/TaskManagement";
+import ContactManagement from "./view/admin/components/ContactManagement";
+import Loader from "./Loader";
 
 const Home = lazy(() => import("./view/home/Home"));
 const Login = lazy(() => import("./view/login/Login"));
@@ -46,23 +48,50 @@ const AuthRoute = ({ children }) => {
 	const { role } = useUserRole();
 
 	if (isAuthenticated) {
+		if (role === "admin") {
+			return (
+				<Navigate
+					to='/admin/user-management'
+					replace
+				/>
+			);
+		}
+		if (role === "staff") {
+			return (
+				<Navigate
+					to='/admin/task-management'
+					replace
+				/>
+			);
+		}
 		return (
 			<Navigate
 				to='/home'
 				replace
 			/>
 		);
-	} else if (isAuthenticated && role === "admin") {
+	}
+
+	return children;
+};
+
+// HomeRoute.js - For the home page to redirect admins and staff
+const HomeRoute = ({ children }) => {
+	const { role } = useUserRole();
+
+	if (role === "admin") {
 		return (
 			<Navigate
 				to='/admin/user-management'
 				replace
 			/>
 		);
-	} else if (isAuthenticated && role === "staff") {
+	}
+
+	if (role === "staff") {
 		return (
 			<Navigate
-				to='/admin/task-management'
+				to='/staff/task-management'
 				replace
 			/>
 		);
@@ -74,11 +103,19 @@ const AuthRoute = ({ children }) => {
 const router = createBrowserRouter([
 	{
 		index: true,
-		element: <Home />,
+		element: (
+			<HomeRoute>
+				<Home />
+			</HomeRoute>
+		),
 	},
 	{
 		path: "/home",
-		element: <Home />,
+		element: (
+			<HomeRoute>
+				<Home />
+			</HomeRoute>
+		),
 	},
 
 	{
@@ -153,7 +190,7 @@ const router = createBrowserRouter([
 			},
 			{
 				path: "contact-management",
-				element: <h1>Hello</h1>,
+				element: <ContactManagement />,
 			},
 			{
 				path: "task-management",
@@ -168,7 +205,12 @@ const App = () => {
 		<SnackbarProvider>
 			<UserRoleProvider>
 				<IntroFormProvider>
-					<Suspense fallback={<div>Loading...</div>}>
+					<Suspense
+						fallback={
+							<div className='w-screen h-screen flex justify-center items-center'>
+								<Loader />
+							</div>
+						}>
 						<RouterProvider router={router} />
 					</Suspense>
 				</IntroFormProvider>

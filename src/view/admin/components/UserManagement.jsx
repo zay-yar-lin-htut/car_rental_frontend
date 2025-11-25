@@ -70,7 +70,7 @@ const UserManagement = () => {
 		setLoading(true);
 		try {
 			const filterValue =
-				roleFilter === "All" ? "active_user" : roleFilter.toLowerCase();
+				roleFilter === "All" ? "active_user" : roleFilter === "Banned" ? "banned_user" : roleFilter.toLowerCase();
 
 			const response = await dataServices.retrieve(
 				API_ENDPOINTS.users.base,
@@ -237,6 +237,20 @@ const UserManagement = () => {
 			},
 		},
 		{
+			id: "no_show_count",
+			label: "No Show Count",
+			sx: {
+				color: "var(--text-color)",
+			},
+		},
+		{
+			id: "cancellation_count",
+			label: "Cancellation Count",
+			sx: {
+				color: "var(--text-color)",
+			},
+		},
+		{
 			id: "role",
 			label: "Role",
 			sx: {
@@ -392,6 +406,7 @@ const UserManagement = () => {
 						<MenuItem value='Admin'>Admin</MenuItem>
 						<MenuItem value='Staff'>Staff</MenuItem>
 						<MenuItem value='User'>User</MenuItem>
+						<MenuItem value='Banned'>Banned</MenuItem>
 					</Select>
 				</FormControl>
 				<Button

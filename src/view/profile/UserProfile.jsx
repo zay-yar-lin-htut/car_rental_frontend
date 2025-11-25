@@ -272,6 +272,7 @@ const ModernUserProfile = () => {
 		handleOpenDialog,
 		handleCloseDialog,
 		handleProfileUpdate,
+		fineDetails,
 	} = useUserProfile();
 
 	if (profileLoading) {
@@ -423,24 +424,43 @@ const ModernUserProfile = () => {
 								label='Location'
 								value={user.address}
 							/>
+							{fineDetails && (
+								<DetailRow
+									label='Fine'
+									value={`$${fineDetails["Total Fine"]}`}
+								/>
+							)}
 						</Stack>
-						<Button
-							variant='outlined'
-							startIcon={<Edit />}
-							onClick={handleOpenDialog}
-							sx={{
-								color: "var(--primary-contrast-text)",
-								borderColor: "var(--divider-color)",
-								borderRadius: "50px",
-								px: 3,
-								py: 1,
-								"&:hover": {
-									bgcolor: "rgba(255, 255, 255, 0.1)",
-									borderColor: "var(--text-color)",
-								},
-							}}>
-							Edit Profile
-						</Button>
+						<Box>
+							<Button
+								variant='outlined'
+								startIcon={<Edit />}
+								onClick={handleOpenDialog}
+								sx={{
+									color: "var(--primary-contrast-text)",
+									borderColor: "var(--divider-color)",
+									borderRadius: "50px",
+									px: 3,
+									py: 1,
+									"&:hover": {
+										bgcolor: "rgba(255, 255, 255, 0.1)",
+										borderColor: "var(--text-color)",
+									},
+								}}>
+								Edit Profile
+							</Button>
+							{fineDetails && (
+								<Button
+									variant='contained'
+									color='error'
+									sx={{ ml: 2 }}
+									onClick={() => {
+										alert("Pay now functionality is not implemented yet.");
+									}}>
+									Pay Now
+								</Button>
+							)}
+						</Box>
 					</Box>
 				</Box>
 

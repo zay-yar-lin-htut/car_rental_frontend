@@ -79,9 +79,9 @@ const HighlightCard = React.memo(({ item, dataServices }) => {
 	};
 
 	return (
-		<Box sx={{ px: 2, outline: "none" }}>
+		<Box sx={{ px: 2, marginTop: 5, marginBottom: 5, outline: "none" }}>
 			<Card
-				sx={{
+				sx={{	
 					bgcolor: "var(--background-paper)",
 					borderRadius: 3,
 					overflow: "hidden",

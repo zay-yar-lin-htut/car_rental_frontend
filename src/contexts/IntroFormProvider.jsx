@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
 import dayjs from "dayjs";
 
 const IntroFormContext = createContext();
@@ -20,7 +20,7 @@ export const IntroFormProvider = ({ children }) => {
 
 	const [expanded, setExpanded] = useState(false);
 
-	const resetForm = () => {
+	const resetForm = useCallback(() => {
 		setFormValues({
 			pickupLocation: [],
 			dropSameAsPickup: true,
@@ -30,7 +30,8 @@ export const IntroFormProvider = ({ children }) => {
 			dropDate: null,
 			dropTime: null,
 		});
-	};
+		setExpanded(false);
+	}, []);
 
 	const value = {
 		formValues,

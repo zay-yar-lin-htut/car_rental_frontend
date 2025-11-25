@@ -11,8 +11,6 @@ const VideoBackground1 = ({ videoSrc, useOverlay = true }) => {
           left: 0,
           right: 0,
           bottom: 0,
-          background: `linear-gradient(to top, rgba(13, 27, 42, 1) 10%, 
-                    rgba(13, 27, 42, 0.4) 50%, rgba(13, 27, 42, 0.8) 100%)`,
           zIndex: 2,
         }}
       />

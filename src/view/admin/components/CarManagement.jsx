@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { createDataServices } from "../../../services/DataServices";
 import ReusableTable from "./ReusableTable";
+import ConfirmDialog from "../../../common/ConfirmDialog";
 import {
 	Box,
 	TextField,
@@ -47,13 +48,18 @@ const CarManagement = () => {
 		1500
 	);
 	const [availabilityFilter, setAvailabilityFilter] = useState("All");
-	const [sort, setSort] = useState({ by: "created_at", order: "desc" });
+	const [fuelTypeFilter, setFuelTypeFilter] = useState("All");
+	const [carTypeFilter, setCarTypeFilter] = useState("All");
+	const [sort, setSort] = useState({ by: "price_per_day", order: "desc" });
 	const [openManageCarDialog, setOpenManageCarDialog] = useState(false);
 
 	const [selectedFile, setSelectedFile] = useState(null);
 	const [imagePreview, setImagePreview] = useState(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [officeLocations, setOfficeLocations] = useState([]);
+	const [carTypes, setCarTypes] = useState([]);
 	const [editingCar, setEditingCar] = useState(null); // State to hold the car being edited
+	const [confirmDialog, setConfirmDialog] = useState({ open: false, car: null });
 	const [carFormData, setCarFormData] = useState({
 		model: "",
 		color: "",
@@ -66,7 +72,33 @@ const CarManagement = () => {
 		fuel_type: "petrol",
 		car_type_id: "",
 		car_image: "",
+		office_location_id: "",
 	});
+
+	useEffect(() => {
+		const getOfficeLocation = async () => {
+			try {
+				const response = await dataServices.retrieve(
+					API_ENDPOINTS.location.base,
+					API_ENDPOINTS.location.getOffice
+				);
+				setOfficeLocations(response.data || []);
+			} catch (error) {}
+		};
+
+		const getCarTypes = async () => {
+			try {
+				const response = await dataServices.retrieve(
+					API_ENDPOINTS.carTypes.base,
+					API_ENDPOINTS.carTypes.getAll
+				);
+				setCarTypes(response.data || []);
+			} catch (error) {}
+		};
+
+		getOfficeLocation();
+		getCarTypes();
+	}, []);
 
 	const fetchCars = async () => {
 		setLoading(true);
@@ -74,19 +106,27 @@ const CarManagement = () => {
 			const params = new URLSearchParams({
 				first: page + 1,
 				max: rowsPerPage,
-				search_by: debouncedSearchTerm,
-				filter_by:
-					availabilityFilter === "All" ? "" : availabilityFilter.toLowerCase(),
-				sort_by: sort.by,
-				order: sort.order,
 			});
+
+			if (debouncedSearchTerm) params.append('search_by', debouncedSearchTerm);
+			if (carTypeFilter !== "All") params.append('car_type_id', carTypeFilter);
+			if (fuelTypeFilter !== "All") params.append('fuel_type', fuelTypeFilter);
+			if (availabilityFilter !== "All") params.append('availability', (availabilityFilter === "Available").toString());
+
+			// Add sorting parameter
+			if (sort.by === 'price_per_day') {
+				params.append('asc_day', (sort.order === 'asc').toString());
+			} else if (sort.by === 'price_per_hour') {
+				params.append('asc_hour', (sort.order === 'asc').toString());
+			}
+			// No sorting for other fields
 
 			const response = await dataServices.retrieve(
 				API_ENDPOINTS.cars.base,
 				`${API_ENDPOINTS.cars.getAll}?${params.toString()}`
 			);
-			setCars(response.data.cars || []);
-			setTotalCars(response.data.totalCars || 0);
+			setCars(response.data.data || response.data.cars || response.data || []);
+			setTotalCars(response.data.total || response.data.totalCars || 0);
 			setError(null);
 		} catch (err) {
 			const errorMessage = err.message || "Failed to fetch cars.";
@@ -98,7 +138,7 @@ const CarManagement = () => {
 
 	useEffect(() => {
 		fetchCars();
-	}, [page, rowsPerPage, debouncedSearchTerm, availabilityFilter, sort]);
+	}, [page, rowsPerPage, debouncedSearchTerm, availabilityFilter, fuelTypeFilter, carTypeFilter, sort]);
 
 	const handleAvailabilityFilterChange = (event) => {
 		setPage(0);
@@ -116,10 +156,10 @@ const CarManagement = () => {
 			price_per_day: "",
 			number_of_seats: "",
 			luggage_capacity: "",
-			transmission: "Automatic",
-			fuel_type: "petrol",
+			transmission: "",
+			fuel_type: "",
 			car_type_id: "",
-
+			office_location_id: "",
 			car_image: "",
 		});
 		setSelectedFile(null);
@@ -160,13 +200,31 @@ const CarManagement = () => {
 			transmission: "",
 			fuel_type: "",
 			car_type_id: "",
-			ownership_condition: "",
+			office_location_id: "",
+			car_image: "",
 		});
 		setImagePreview(null);
 		setSelectedFile(null);
 	};
 
 	const handleFormSubmit = () => {
+		// Validation
+		const requiredFields = [
+			'model', 'color', 'license_plate', 'price_per_hour', 'price_per_day',
+			'number_of_seats', 'luggage_capacity', 'fuel_type', 'car_type_id',
+			'transmission', 'office_location_id'
+		];
+		for (const field of requiredFields) {
+			if (!carFormData[field] || carFormData[field] === "") {
+				showSnackbar(`Please fill the ${field.replace('_', ' ')} field.`, "error");
+				return;
+			}
+		}
+		if (!editingCar && !selectedFile && !imagePreview) {
+			showSnackbar("Please upload a car image.", "error");
+			return;
+		}
+
 		setIsSubmitting(true);
 		const formData = new FormData();
 		const isEditing = !!editingCar;
@@ -208,23 +266,24 @@ const CarManagement = () => {
 	};
 
 	const handleEdit = (car) => {
-		setEditingCar(car);
-		console.log("car", car);
-
+		const carType = carTypes.find(type => type.type_name === car.car_type);
 		setCarFormData({
 			...car,
 			license_plate: car.license_plate,
-			car_type_id: car.car_type_id || "",
+			car_type_id: carType ? carType.car_type_id : "",
 		});
-		setImagePreview(car.car_image_url);
+		setImagePreview(dataServices.retrieveImage(car.car_image_url));
 		setSelectedFile(null); // Clear previous file selection
 		setOpenManageCarDialog(true);
 	};
 
-	const handleDelete = async (car) => {
-		if (!window.confirm(`Are you sure you want to delete ${car.model}?`))
-			return;
+	const handleDelete = (car) => {
+		setConfirmDialog({ open: true, car });
+	};
 
+	const handleConfirmDelete = async () => {
+		const car = confirmDialog.car;
+		setConfirmDialog({ open: false, car: null });
 		try {
 			await dataServices.retrieveDELETE(
 				API_ENDPOINTS.cars.base,
@@ -246,119 +305,157 @@ const CarManagement = () => {
 		setPage(0);
 	};
 
-	const columns = [
-		{
-			id: "image",
-			label: "Image",
-			render: (car) => (
-				<img
-					src={car.car_image_url || undefined}
-					alt={car.model || "car"}
-					style={{
-						width: 100,
-						height: 60,
-						objectFit: "cover",
-						borderRadius: 4,
-					}}
-				/>
-			),
-			sx: {
-				color: "var(--text-color)",
+	const columns = useMemo(
+		() => [
+			{
+				id: "image",
+				label: "Image",
+				render: (car) => (
+					<img
+						src={dataServices.retrieveImage(car.car_image_url) || undefined}
+						alt={car.model || "car"}
+						style={{
+							width: 100,
+							height: 60,
+							objectFit: "cover",
+							borderRadius: 4,
+						}}
+					/>
+				),
+				sx: {
+					color: "var(--text-color)",
+				},
 			},
-		},
 
-		{
-			id: "license_plate",
-			label: "License Plate",
-			sx: {
-				color: "var(--text-color)",
+			{
+				id: "license_plate",
+				label: "License Plate",
+				sx: {
+					color: "var(--text-color)",
+				},
 			},
-		},
-		{
-			id: "price_per_day",
-			label: "Price / day",
-			align: "right",
-			sx: {
-				color: "var(--text-color)",
+			{
+				id: "price_per_day",
+				label: "Price / day",
+				align: "right",
+				sx: {
+					color: "var(--text-color)",
+				},
+				render: (car) =>
+					car.price_per_day != null
+						? `$${Number(car.price_per_day).toFixed(2)}`
+						: "-",
 			},
-			render: (car) =>
-				car.price_per_day != null
-					? `$${Number(car.price_per_day).toFixed(2)}`
-					: "-",
-		},
-		{
-			id: "number_of_seats",
-			label: "number_of_seats",
-			align: "center",
-			sx: {
-				color: "var(--text-color)",
+			{
+				id: "price_per_hour",
+				label: "Price / hour",
+				align: "right",
+				sx: {
+					color: "var(--text-color)",
+				},
+				render: (car) =>
+					car.price_per_hour != null
+						? `$${Number(car.price_per_hour).toFixed(2)}`
+						: "-",
 			},
-		},
+			{
+				id: "model",
+				label: "Model",
+				sx: {
+					color: "var(--text-color)",
+				},
+			},
+			{
+				id: "car_type",
+				label: "Car Type",
+				sx: {
+					color: "var(--text-color)",
+				},
+			},
+			{
+				id: "number_of_seats",
+				label: "Seats",
+				align: "center",
+				sx: {
+					color: "var(--text-color)",
+				},
+			},
 
-		{
-			id: "luggage_capacity",
-			label: "Luggage",
-			align: "center",
-			sx: {
-				color: "var(--text-color)",
+			{
+				id: "luggage_capacity",
+				label: "Luggage",
+				align: "center",
+				sx: {
+					color: "var(--text-color)",
+				},
 			},
-		},
-		{
-			id: "transmission",
-			label: "Transmission",
-			align: "center",
-			sx: {
-				color: "var(--text-color)",
+			{
+				id: "transmission",
+				label: "Transmission",
+				align: "center",
+				sx: {
+					color: "var(--text-color)",
+				},
 			},
-		},
-		{
-			id: "owner_name",
-			label: "Owner",
-			render: (car) => car.owner_name || car.ownership_condition || "-",
-			sx: {
-				color: "var(--text-color)",
+			{
+				id: "fuel_type",
+				label: "Fuel",
+				align: "center",
+				sx: {
+					color: "var(--text-color)",
+				},
 			},
-		},
-		{
-			id: "fuel_type",
-			label: "Fuel",
-			align: "center",
-			sx: {
-				color: "var(--text-color)",
+			{
+				id: "availability",
+				label: "Availability",
+				align: "center",
+				sx: {
+					color: "var(--text-color)",
+				},
+				render: (car) => (
+					<Chip
+						label={car.availability ? "Available" : "Unavailable"}
+						color={car.availability ? "success" : "error"}
+						variant='outlined'
+					/>
+				),
 			},
-		},
 
-		{
-			id: "actions",
-			label: "Action",
-			align: "center",
-			sx: {
-				color: "var(--text-color)",
+			{
+				id: "actions",
+				label: "Action",
+				align: "center",
+				sx: {
+					color: "var(--text-color)",
+				},
+				render: (car) => (
+					<>
+						<Tooltip title='Edit Car'>
+							<IconButton onClick={() => handleEdit(car)}>
+								<EditIcon
+									style={{
+										color: "var(--success-color)",
+									}}
+								/>
+							</IconButton>
+						</Tooltip>
+						{car.availability ? (
+							<Tooltip title='Delete Car'>
+								<IconButton onClick={() => handleDelete(car)}>
+									<DeleteIcon
+										style={{
+											color: "var(--error-color)",
+										}}
+									/>
+								</IconButton>
+							</Tooltip>
+						) : null}
+					</>
+				),
 			},
-			render: (car) => (
-				<>
-					<Tooltip title='Edit Car'>
-						<IconButton onClick={() => handleEdit(car)}>
-							<EditIcon
-								style={{
-									color: "var(--success-color)",
-								}}
-							/>
-						</IconButton>
-					</Tooltip>
-					<Tooltip title='Delete Car'>
-						<IconButton onClick={() => handleDelete(car)}>
-							<DeleteIcon
-								style={{
-									color: "var(--error-color)",
-								}}
-							/>
-						</IconButton>
-					</Tooltip>
-				</>
-			),
-		},
-	];
+		],
+		[]
+	);
 
 	return (
 		<Box
@@ -383,7 +480,7 @@ const CarManagement = () => {
 					gap: 2,
 				}}>
 				<TextField
-					label='Search by make, model, license...'
+					label='Search by type, model, license...'
 					variant='outlined'
 					value={searchTerm}
 					onChange={(e) => setSearchTerm(e.target.value)}
@@ -391,20 +488,102 @@ const CarManagement = () => {
 				/>
 				<FormControl
 					variant='outlined'
-					sx={{ minWidth: 120, color: "white" }}>
+					sx={{ minWidth: 120 }}>
+					<InputLabel>Car Type</InputLabel>
+					<Select
+						value={carTypeFilter}
+						onChange={(e) => setCarTypeFilter(e.target.value)}
+						label='Car Type'
+						sx={{
+							color: "var(--text-color)",
+						}}>
+						<MenuItem value='All'>All</MenuItem>
+						{carTypes.map((type) => (
+							<MenuItem key={type.car_type_id} value={type.car_type_id}>
+								{type.type_name}
+							</MenuItem>
+						))}
+					</Select>
+				</FormControl>
+				<FormControl
+					variant='outlined'
+					sx={{ minWidth: 120 }}>
+					<InputLabel>Fuel Type</InputLabel>
+					<Select
+						value={fuelTypeFilter}
+						onChange={(e) => setFuelTypeFilter(e.target.value)}
+						label='Fuel Type'
+						sx={{
+							color: "var(--text-color)",
+						}}>
+						<MenuItem value='All'>All</MenuItem>
+						<MenuItem value='petrol'>Petrol</MenuItem>
+						<MenuItem value='diesel'>Diesel</MenuItem>
+						<MenuItem value='electric'>Electric</MenuItem>
+					</Select>
+				</FormControl>
+				<FormControl
+					variant='outlined'
+					sx={{ minWidth: 120 }}>
 					<InputLabel>Availability</InputLabel>
 					<Select
 						value={availabilityFilter}
-						onChange={handleAvailabilityFilterChange}
+						onChange={(e) => setAvailabilityFilter(e.target.value)}
 						label='Availability'
 						sx={{
-							color: "white",
+							color: "var(--text-color)",
 						}}>
 						<MenuItem value='All'>All</MenuItem>
 						<MenuItem value='Available'>Available</MenuItem>
 						<MenuItem value='Unavailable'>Unavailable</MenuItem>
 					</Select>
 				</FormControl>
+				<FormControl
+					variant='outlined'
+					sx={{ minWidth: 120 }}>
+					<InputLabel>Sort By</InputLabel>
+					<Select
+						value={sort.by}
+						onChange={(e) => setSort(prev => ({ ...prev, by: e.target.value }))}
+						label='Sort By'
+						sx={{
+							color: "var(--text-color)",
+						}}>
+						<MenuItem value='price_per_day'>Price per Day</MenuItem>
+						<MenuItem value='price_per_hour'>Price per Hour</MenuItem>
+					</Select>
+				</FormControl>
+				<FormControl
+					variant='outlined'
+					sx={{ minWidth: 120 }}>
+					<InputLabel>Order</InputLabel>
+					<Select
+						value={sort.order}
+						onChange={(e) => setSort(prev => ({ ...prev, order: e.target.value }))}
+						label='Order'
+						sx={{
+							color: "var(--text-color)",
+						}}>
+						<MenuItem value='asc'>Ascending</MenuItem>
+						<MenuItem value='desc'>Descending</MenuItem>
+					</Select>
+				</FormControl>
+				{/* <FormControl
+					variant='outlined'
+					sx={{ minWidth: 120 }}>
+					<InputLabel>Availability</InputLabel>
+					<Select
+						value={availabilityFilter}
+						onChange={handleAvailabilityFilterChange}
+						label='Availability'
+						sx={{
+							color: "var(--text-color)",
+						}}>
+						<MenuItem value='All'>All</MenuItem>
+						<MenuItem value='Available'>Available</MenuItem>
+						<MenuItem value='Unavailable'>Unavailable</MenuItem>
+					</Select>
+				</FormControl> */}
 				<Button
 					variant='contained'
 					startIcon={<AddIcon />}
@@ -521,7 +700,6 @@ const CarManagement = () => {
 									name='model'
 									value={carFormData.model}
 									onChange={handleNewCarChange}
-									InputLabelProps={{ style: { color: "white" } }}
 								/>
 							</Box>
 
@@ -532,7 +710,6 @@ const CarManagement = () => {
 									name='color'
 									value={carFormData.color}
 									onChange={handleNewCarChange}
-									InputLabelProps={{ style: { color: "white" } }}
 								/>
 							</Box>
 							<Box sx={{ width: { xs: "100%", sm: "calc(33.33% - 11px)" } }}>
@@ -542,18 +719,6 @@ const CarManagement = () => {
 									name='license_plate'
 									value={carFormData.license_plate}
 									onChange={handleNewCarChange}
-									InputLabelProps={{ style: { color: "white" } }}
-								/>
-							</Box>
-							<Box sx={{ width: { xs: "100%", sm: "calc(33.33% - 11px)" } }}>
-								<TextField
-									fullWidth
-									label='number_of_seats'
-									name='number_of_seats'
-									type='number'
-									value={carFormData.number_of_seats}
-									onChange={handleNewCarChange}
-									InputLabelProps={{ style: { color: "white" } }}
 								/>
 							</Box>
 
@@ -565,9 +730,9 @@ const CarManagement = () => {
 									type='number'
 									value={carFormData.price_per_hour}
 									onChange={handleNewCarChange}
-									InputLabelProps={{ style: { color: "white" } }}
 								/>
 							</Box>
+
 							<Box sx={{ width: { xs: "100%", sm: "calc(50% - 8px)" } }}>
 								<TextField
 									fullWidth
@@ -576,11 +741,20 @@ const CarManagement = () => {
 									type='number'
 									value={carFormData.price_per_day}
 									onChange={handleNewCarChange}
-									InputLabelProps={{ style: { color: "white" } }}
+								/>
+							</Box>
+							<Box sx={{ width: { xs: "100%", sm: "calc(50% - 8px)" } }}>
+								<TextField
+									fullWidth
+									label='number_of_seats'
+									name='number_of_seats'
+									type='number'
+									value={carFormData.number_of_seats}
+									onChange={handleNewCarChange}
 								/>
 							</Box>
 
-							<Box sx={{ width: { xs: "100%", sm: "calc(25% - 12px)" } }}>
+							<Box sx={{ width: { xs: "100%", sm: "calc(50% - 8px)" } }}>
 								<TextField
 									fullWidth
 									label='Luggage Capacity'
@@ -588,25 +762,12 @@ const CarManagement = () => {
 									type='number'
 									value={carFormData.luggage_capacity}
 									onChange={handleNewCarChange}
-									InputLabelProps={{ style: { color: "white" } }}
 								/>
 							</Box>
-							<Box sx={{ width: { xs: "100%", sm: "calc(25% - 12px)" } }}>
+
+							<Box sx={{ width: { xs: "100%", sm: "calc(33.33% - 11px)" } }}>
 								<FormControl fullWidth>
-									<InputLabel sx={{ color: "white" }}>Transmission</InputLabel>
-									<Select
-										name='transmission'
-										value={carFormData.transmission}
-										label='Transmission'
-										onChange={handleNewCarChange}>
-										<MenuItem value='auto'>Auto</MenuItem>
-										<MenuItem value='manual'>Manual</MenuItem>
-									</Select>
-								</FormControl>
-							</Box>
-							<Box sx={{ width: { xs: "100%", sm: "calc(25% - 12px)" } }}>
-								<FormControl fullWidth>
-									<InputLabel sx={{ color: "white" }}>Fuel Type</InputLabel>
+									<InputLabel>Fuel Type</InputLabel>
 									<Select
 										name='fuel_type'
 										value={carFormData.fuel_type}
@@ -618,9 +779,9 @@ const CarManagement = () => {
 									</Select>
 								</FormControl>
 							</Box>
-							<Box sx={{ width: { xs: "100%", sm: "calc(25% - 12px)" } }}>
+							<Box sx={{ width: { xs: "100%", sm: "calc(33.33% - 11px)" } }}>
 								<FormControl fullWidth>
-									<InputLabel sx={{ color: "white" }}>Car Type</InputLabel>
+									<InputLabel>Car Type</InputLabel>
 									<Select
 										name='car_type_id'
 										value={carFormData.car_type_id}
@@ -635,6 +796,39 @@ const CarManagement = () => {
 									</Select>
 								</FormControl>
 							</Box>
+							<Box sx={{ width: { xs: "100%", sm: "calc(33.33% - 11px)" } }}>
+								<FormControl fullWidth>
+									<InputLabel>Transmission</InputLabel>
+									<Select
+										name='transmission'
+										value={carFormData.transmission}
+										label='Transmission'
+										onChange={handleNewCarChange}>
+										<MenuItem value='auto'>Auto</MenuItem>
+										<MenuItem value='manual'>Manual</MenuItem>
+									</Select>
+								</FormControl>
+							</Box>
+							<Box sx={{ width: { xs: "100%" } }}>
+								<FormControl fullWidth>
+									<InputLabel>
+										Office Location
+									</InputLabel>
+									<Select
+										name='office_location_id'
+										value={carFormData.office_location_id}
+										label='Office Location'
+										onChange={handleNewCarChange}>
+										{officeLocations.map((location) => (
+											<MenuItem
+												key={location.office_location_id}
+												value={location.office_location_id}>
+												{location.location_name}
+											</MenuItem>
+										))}
+									</Select>
+								</FormControl>
+							</Box>
 						</Box>
 					</Box>
 				</DialogContent>
@@ -646,14 +840,22 @@ const CarManagement = () => {
 						disabled={isSubmitting}>
 						{isSubmitting ? (
 							<CircularProgress size={24} />
-						) : editingCar ? (
-							"Update Car"
 						) : (
-							"Add Car"
+							"Save Car"
 						)}
 					</Button>
 				</DialogActions>
 			</Dialog>
+
+			<ConfirmDialog
+				open={confirmDialog.open}
+				onClose={() => setConfirmDialog({ open: false, car: null })}
+				onConfirm={handleConfirmDelete}
+				title="Delete Car"
+				message={<>Are you sure you want to delete <strong>{confirmDialog.car?.model}</strong>? This action cannot be undone.</>}
+				confirmText="Delete"
+				cancelText="Cancel"
+			/>
 		</Box>
 	);
 };

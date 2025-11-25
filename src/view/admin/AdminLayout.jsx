@@ -12,6 +12,8 @@ import {
 	AppBar,
 	Typography,
 	Button,
+	CircularProgress,
+	IconButton,
 } from "@mui/material";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
@@ -22,6 +24,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
 import { useSnackbar } from "../../contexts/ErrorMessage";
 import { createDataServices } from "../../services/DataServices";
+import MenuIcon from "@mui/icons-material/Menu";
 import { useUserRole } from "../../contexts/userRoleContext";
 
 const drawerWidth = 260;
@@ -33,22 +36,24 @@ const AdminLayout = () => {
 	const location = useLocation();
 	const [logouting, setLogouting] = React.useState(false);
 	const { role } = useUserRole();
+	const [mobileOpen, setMobileOpen] = React.useState(false);
 
-	const handleLogout = () => {
+	const handleDrawerToggle = () => {
+		setMobileOpen(!mobileOpen);
+	};
+
+	const handleLogout = async () => {
 		setLogouting(true);
-		AUTH_CONFIG.clearToken();
-		AUTH_CONFIG.clearUserData();
-		navigate("/login");
-		dataServices
-			.Logout(API_ENDPOINTS.auth.logout)
-			.then((response) => {
-				setLogouting(false);
-				// showSnackbar(response.message, "success");
-			})
-			.catch((error) => {
-				setLogouting(false);
-				showSnackbar(error.message, "error");
-			});
+		try {
+			// Clear all authentication data
+			await AUTH_CONFIG.clearToken();
+			await AUTH_CONFIG.clearUserData();
+			// Force a full page reload to ensure all application state is reset.
+			window.location.assign("/");
+		} catch (error) {
+			showSnackbar("Logout failed. Please try again.", "error");
+			setLogouting(false);
+		}
 	};
 
 	const adminNavItems = [
@@ -79,6 +84,22 @@ const AdminLayout = () => {
 
 	const navItems = role === "admin" ? adminNavItems : staffNavItems;
 
+	// If the role hasn't been loaded yet, display a loading indicator
+	// to prevent rendering the wrong sidebar.
+	if (!role) {
+		return (
+			<Box
+				sx={{
+					display: "flex",
+					justifyContent: "center",
+					alignItems: "center",
+					height: "100vh",
+				}}>
+				<CircularProgress />
+			</Box>
+		);
+	}
+
 	return (
 		<Box sx={{ display: "flex", bgcolor: "var(--background-color)" }}>
 			<AppBar
@@ -88,89 +109,159 @@ const AdminLayout = () => {
 					bgcolor: "var(--background-paper)",
 				}}>
 				<Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
+					<IconButton
+						color='inherit'
+						aria-label='open drawer'
+						edge='start'
+						onClick={handleDrawerToggle}
+						sx={{ mr: 2, display: { sm: "none" } }}>
+						<MenuIcon />
+					</IconButton>
 					<Typography
 						variant='h6'
 						noWrap
 						component='div'
+						fontWeight={600}
 						color='var(--text-color)'>
-						Admin Dashboard
+						{role === "admin" ? "Admin" : "Staff"} Dashboard
 					</Typography>
-					<Typography
-						variant='h6'
-						component={Link}
-						to='/'
-						sx={{ textDecoration: "none", color: "var(--text-color)" }}>
-						<HomeIcon />
-					</Typography>
+
 					<Button
 						sx={{
-							color: "var(--text-color)",
+							color: "error.main",
 						}}
 						onClick={handleLogout}>
 						{logouting ? "Logging Out..." : "Sign Out"}
 					</Button>
 				</Toolbar>
 			</AppBar>
-			<Drawer
-				variant='permanent'
-				sx={{
-					width: drawerWidth,
-					flexShrink: 0,
-					[`& .MuiDrawer-paper`]: {
-						width: drawerWidth,
-						boxSizing: "border-box",
-						bgcolor: "var(--background-paper)",
-					},
-				}}>
-				<Toolbar />
-				<Box sx={{ overflow: "auto", mt: 4 }}>
-					<List>
-						{navItems.map((item) => (
-							<ListItem
-								key={item.text}
-								sx={{
-									backgroundColor:
-										location.pathname === item.to
-											? "var(--primary-color)"
-											: "transparent",
-									"&:hover": {
-										backgroundColor: "rgba(255, 152, 0, 0.1)",
-									},
-									my: 1,
-								}}
-								disablePadding>
-								<ListItemButton
-									component={Link}
-									to={item.to}>
-									<ListItemIcon
-										sx={{
-											color:
-												location.pathname === item.to
-													? "var(--primary-contrast-text)"
-													: "var(--text-color)",
-										}}>
-										{item.icon}
-									</ListItemIcon>
-									<ListItemText
-										primary={item.text}
-										sx={{
-											color:
-												location.pathname === item.to
-													? "var(--primary-contrast-text)"
-													: "var(--text-color)",
-										}}
-									/>
-								</ListItemButton>
-							</ListItem>
-						))}
-					</List>
-				</Box>
-			</Drawer>
+			<Box
+				component='nav'
+				sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+				aria-label='mailbox folders'>
+				{/* Drawer for mobile */}
+				<Drawer
+					variant='temporary'
+					open={mobileOpen}
+					onClose={handleDrawerToggle}
+					ModalProps={{
+						keepMounted: true, // Better open performance on mobile.
+					}}
+					sx={{
+						display: { xs: "block", sm: "none" },
+						"& .MuiDrawer-paper": {
+							boxSizing: "border-box",
+							width: drawerWidth,
+							bgcolor: "var(--background-paper)",
+						},
+					}}>
+					<Toolbar />
+					<Box sx={{ overflow: "auto", mt: 4 }}>
+						<List>
+							{navItems.map((item) => (
+								<ListItem
+									key={item.text}
+									sx={{
+										backgroundColor:
+											location.pathname === item.to
+												? "var(--primary-color)"
+												: "transparent",
+										"&:hover": {
+											backgroundColor: "rgba(255, 152, 0, 0.1)",
+										},
+										my: 1,
+									}}
+									disablePadding>
+									<ListItemButton
+										component={Link}
+										to={item.to}>
+										<ListItemIcon
+											sx={{
+												color:
+													location.pathname === item.to
+														? "var(--primary-contrast-text)"
+														: "var(--text-color)",
+											}}>
+											{item.icon}
+										</ListItemIcon>
+										<ListItemText
+											primary={item.text}
+											sx={{
+												color:
+													location.pathname === item.to
+														? "var(--primary-contrast-text)"
+														: "var(--text-color)",
+											}}
+										/>
+									</ListItemButton>
+								</ListItem>
+							))}
+						</List>
+					</Box>
+				</Drawer>
+				{/* Drawer for desktop */}
+				<Drawer
+					variant='permanent'
+					sx={{
+						display: { xs: "none", sm: "block" },
+						"& .MuiDrawer-paper": {
+							boxSizing: "border-box",
+							width: drawerWidth,
+							bgcolor: "var(--background-paper)",
+						},
+					}}
+					open>
+					<Toolbar />
+					<Box sx={{ overflow: "auto", mt: 4 }}>
+						<List>
+							{navItems.map((item) => (
+								<ListItem
+									key={item.text}
+									sx={{
+										backgroundColor:
+											location.pathname === item.to
+												? "var(--primary-color)"
+												: "transparent",
+										"&:hover": {
+											backgroundColor: "rgba(255, 152, 0, 0.1)",
+										},
+										my: 1,
+									}}
+									disablePadding>
+									<ListItemButton
+										component={Link}
+										to={item.to}>
+										<ListItemIcon
+											sx={{
+												color:
+													location.pathname === item.to
+														? "var(--primary-contrast-text)"
+														: "var(--text-color)",
+											}}>
+											{item.icon}
+										</ListItemIcon>
+										<ListItemText
+											primary={item.text}
+											sx={{
+												color:
+													location.pathname === item.to
+														? "var(--primary-contrast-text)"
+														: "var(--text-color)",
+											}}
+										/>
+									</ListItemButton>
+								</ListItem>
+							))}
+						</List>
+					</Box>
+				</Drawer>
+			</Box>
 			<Box
 				component='main'
 				sx={{
 					flexGrow: 1,
 					p: 3,
+					width: { xs: "100%", sm: `calc(100% - ${drawerWidth}px)` },
 					minHeight: "100vh",
 					color: "var(--text-color)",
 				}}>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import TaskMap from "./TaskMap";
 import ReusableTable from "./ReusableTable";
 import {
@@ -23,54 +23,8 @@ import {
 	Edit as EditIcon,
 	Visibility as VisibilityIcon,
 } from "@mui/icons-material";
-
-const initialDemoTasks = [
-	{
-		booking_id: 1,
-		customer_name: "John Doe",
-		car_model: "Toyota Camry",
-		license_plate: "ABC-123",
-		pickup_datetime: "2025-12-01T10:00:00Z",
-		status: "Pending",
-		type: "Delivery",
-		lat: 51.505,
-		lng: -0.09,
-	},
-	{
-		booking_id: 2,
-		customer_name: "Jane Smith",
-		car_model: "Honda Civic",
-		license_plate: "XYZ-789",
-		pickup_datetime: "2025-12-01T11:00:00Z",
-		status: "In Progress",
-		type: "Pickup",
-		lat: 51.51,
-		lng: -0.1,
-	},
-	{
-		booking_id: 3,
-		customer_name: "Peter Jones",
-		car_model: "Ford Focus",
-		license_plate: "FGH-456",
-		pickup_datetime: "2025-12-02T09:00:00Z",
-		status: "Completed",
-		type: "Delivery",
-		lat: 51.5,
-		lng: -0.12,
-	},
-	{
-		booking_id: 4,
-		customer_name: "Mary Johnson",
-		car_model: "Chevrolet Malibu",
-		license_plate: "JKL-101",
-		pickup_datetime: "2025-12-03T14:00:00Z",
-		status: "Cancelled",
-		type: "Pickup",
-		lat: 51.49,
-		lng: -0.08,
-	},
-	// Add more demo tasks as needed
-];
+import { createDataServices } from "../../../services/DataServices";
+import { API_ENDPOINTS } from "../../../services/Configuration";
 
 // Define a static starting point for the route
 const companyLocation = {
@@ -79,11 +33,16 @@ const companyLocation = {
 };
 
 const TaskManagement = () => {
-	const [tasks, setTasks] = useState(initialDemoTasks);
+	const dataService = createDataServices();
+	const [tasks, setTasks] = useState([]);
 	const [page, setPage] = useState(0);
 	const [rowsPerPage, setRowsPerPage] = useState(10);
 	const [searchTerm, setSearchTerm] = useState("");
-	const [statusFilter, setStatusFilter] = useState("All");
+	const [statusFilter, setStatusFilter] = useState("delivery");
+	const [officeFilter, setOfficeFilter] = useState(1);
+
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
 
 	// State for View Details Dialog
 	const [openViewDialog, setOpenViewDialog] = useState(false);
@@ -93,6 +52,36 @@ const TaskManagement = () => {
 	const [openUpdateDialog, setOpenUpdateDialog] = useState(false);
 	const [selectedTaskForUpdate, setSelectedTaskForUpdate] = useState(null);
 	const [newStatus, setNewStatus] = useState("");
+
+	const getTasks = async () => {
+		setLoading(true);
+		setError(null);
+		try {
+			let response;
+			if (statusFilter === "take_back") {
+				response = await dataService.retrieve(
+					API_ENDPOINTS.bookings.base,
+					`${API_ENDPOINTS.staff.tdyTakeBack}?office_id=${officeFilter}`
+				);
+			} else if (statusFilter === "delivery") {
+				response = await dataService.retrieve(
+					API_ENDPOINTS.bookings.base,
+					`${API_ENDPOINTS.staff.tdyDeli}?office_id=${officeFilter}`
+				);
+			}
+			setTasks(response.data || []);
+			setError(null);
+		} catch (err) {
+			setError("Failed to fetch tasks. Please try again later.");
+			setTasks([]); // Clear tasks on error
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	useEffect(() => {
+		getTasks();
+	}, [statusFilter, officeFilter]);
 
 	const handleOpenViewDialog = (task) => {
 		setSelectedTask(task);
@@ -131,6 +120,10 @@ const TaskManagement = () => {
 		setPage(0);
 		setStatusFilter(event.target.value);
 	};
+	const handleOfficeFilterChange = (event) => {
+		setPage(0);
+		setOfficeFilter(event.target.value);
+	};
 
 	const handleSearchChange = (event) => {
 		setSearchTerm(event.target.value);
@@ -145,44 +138,65 @@ const TaskManagement = () => {
 		setPage(0);
 	};
 
-	const filteredTasks = useMemo(() => {
-		return tasks.filter((task) => {
-			if (statusFilter !== "All" && task.status !== statusFilter) {
-				return false;
-			}
-			const lowerCaseSearchTerm = searchTerm.toLowerCase();
-			return (
-				task.customer_name.toLowerCase().includes(lowerCaseSearchTerm) ||
-				task.car_model.toLowerCase().includes(lowerCaseSearchTerm) ||
-				task.license_plate.toLowerCase().includes(lowerCaseSearchTerm)
-			);
-		});
-	}, [tasks, searchTerm, statusFilter]);
-
 	const columns = [
-		{ id: "booking_id", label: "Booking ID" },
-		{ id: "customer_name", label: "Customer" },
-		{ id: "car_model", label: "Car" },
-		{ id: "license_plate", label: "License Plate" },
+		{
+			id: "booking_id",
+			label: "Booking ID",
+			sx: {
+				color: "var(--text-color)",
+			},
+		},
+		{
+			id: "customer_name",
+			label: "Customer",
+			sx: {
+				color: "var(--text-color)",
+			},
+		},
+		{
+			id: "car_model",
+			label: "Car",
+			sx: {
+				color: "var(--text-color)",
+			},
+		},
+		{
+			id: "license_plate",
+			label: "License Plate",
+			sx: {
+				color: "var(--text-color)",
+			},
+		},
 		{
 			id: "pickup_datetime",
 			label: "Pickup Time",
+			sx: {
+				color: "var(--text-color)",
+			},
 			render: (task) => new Date(task.pickup_datetime).toLocaleString(),
 		},
 		{
 			id: "status",
 			label: "Status",
+			sx: {
+				color: "var(--text-color)",
+			},
 			render: (task) => (
 				<Chip
 					label={task.status}
 					color={
 						task.status === "Completed"
-							? "success"
+							? "success" // Green background
+							: task.status === "In Progress"
+							? "info" // Blue background
 							: task.status === "Pending"
-							? "warning"
-							: "default"
+							? "warning" // Orange background
+							: task.status === "Cancelled"
+							? "error" // Red background
+							: "default" // Grey background
 					}
 					size='small'
+					// Make text color white for better contrast on colored chips
 				/>
 			),
 		},
@@ -190,11 +204,14 @@ const TaskManagement = () => {
 			id: "actions",
 			label: "Actions",
 			align: "center",
+			sx: {
+				color: "var(--text-color)",
+			},
 			render: (task) => (
 				<>
 					<Tooltip title='View Details'>
 						<IconButton onClick={() => handleOpenViewDialog(task)}>
-							<VisibilityIcon />
+							<VisibilityIcon sx={{ color: "var(--text-color)" }} />
 						</IconButton>
 					</Tooltip>
 					<Tooltip title='Update Status'>
@@ -238,29 +255,38 @@ const TaskManagement = () => {
 				/>
 				<FormControl
 					variant='outlined'
+					sx={{ minWidth: 250 }}>
+					<InputLabel>Office Location</InputLabel>
+					<Select
+						value={officeFilter}
+						onChange={handleOfficeFilterChange}
+						label='Status'>
+						<MenuItem value={1}>Mandalay</MenuItem>
+						<MenuItem value={2}>Yangon</MenuItem>
+					</Select>
+				</FormControl>
+				<FormControl
+					variant='outlined'
 					sx={{ minWidth: 150 }}>
 					<InputLabel>Status</InputLabel>
 					<Select
 						value={statusFilter}
 						onChange={handleStatusFilterChange}
 						label='Status'>
-						<MenuItem value='All'>All</MenuItem>
-						<MenuItem value='Pending'>Pending</MenuItem>
-						<MenuItem value='In Progress'>In Progress</MenuItem>
-						<MenuItem value='Completed'>Completed</MenuItem>
-						<MenuItem value='Cancelled'>Cancelled</MenuItem>
+						<MenuItem value='take_back'>Take Back</MenuItem>
+						<MenuItem value='delivery'>Delivery</MenuItem>
 					</Select>
 				</FormControl>
 			</Box>
 
 			<ReusableTable
 				columns={columns}
-				loading={false}
-				error={null}
-				data={filteredTasks}
+				loading={loading}
+				error={error}
+				data={tasks}
 				page={page}
 				rowsPerPage={rowsPerPage}
-				total={filteredTasks.length}
+				total={tasks.length}
 				onPageChange={handleChangePage}
 				onRowsPerPageChange={handleChangeRowsPerPage}
 				keyExtractor={(task) => task.booking_id}

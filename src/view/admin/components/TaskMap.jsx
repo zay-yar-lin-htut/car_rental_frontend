@@ -69,8 +69,8 @@ const TaskMap = ({ start, end, type }) => {
 			zoom={13}
 			style={{ height: "100%", width: "100%" }}>
 			<TileLayer
-				url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-				attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+				url={`https://api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=${import.meta.env.VITE_TOMTOM_KEY}`}
+				attribution='&copy; <a href="https://www.tomtom.com">TomTom</a>'
 			/>
 			{start && end && (
 				<RoutingMachine

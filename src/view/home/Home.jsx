@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
 	Box,
 	Typography,
@@ -13,6 +13,8 @@ import {
 	ListItem,
 	ListItemText,
 	Fab,
+	useTheme,
+	useMediaQuery,
 } from "@mui/material";
 
 // Icons
@@ -29,6 +31,7 @@ import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
 import { createDataServices } from "../../services/DataServices";
 import { useSnackbar } from "../../contexts/ErrorMessage";
 import { useUserRole } from "../../contexts/userRoleContext";
+import { useIntroForm } from "../../contexts/IntroFormProvider";
 import FooterSection from "./Components/FooterSection";
 import { getNavLinks } from "./Config/navigationConfig";
 
@@ -42,8 +45,13 @@ const dataServices = createDataServices();
 let highlightsCache = null;
 
 const CamaroShowcaseHome = () => {
+	const theme = useTheme();
+	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+	const footerRef = useRef(null);
+	const [hideNavbarOnMobile, setHideNavbarOnMobile] = useState(false);
 	const [logouting, setLogouting] = useState(false);
 	const navigate = useNavigate();
+	const location = useLocation();
 	const { showSnackbar } = useSnackbar();
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [showScroll, setShowScroll] = useState(false);
@@ -52,9 +60,16 @@ const CamaroShowcaseHome = () => {
 		!highlightsCache
 	);
 	const { role } = useUserRole();
+	const { resetForm } = useIntroForm();
 
 	const isLogin = AUTH_CONFIG.isAuthenticated();
 	const [isContactUsOpen, setContactUsOpen] = useState(false);
+
+	useEffect(() => {
+		if (location.pathname === '/') {
+			resetForm();
+		}
+	}, [location.pathname, resetForm]);
 
 	useEffect(() => {
 		AOS.init({ duration: 1000, once: true, offset: 100 });
@@ -90,24 +105,30 @@ const CamaroShowcaseHome = () => {
 		}
 	}, []);
 
-	const navLinks = useMemo(() => getNavLinks(isLogin, role), [isLogin, role]);
+	useEffect(() => {
+		if (!isMobile) return;
+
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				setHideNavbarOnMobile(entry.isIntersecting);
+			},
+			{ threshold: 0.1 }
+		);
+
+		if (footerRef.current) {
+			observer.observe(footerRef.current);
+		}
+
+		return () => observer.disconnect();
+	}, [isMobile]);
+
+	const navLinks = useMemo(() => getNavLinks(isLogin), [isLogin]);
 
 	const handleLogout = () => {
 		setLogouting(true);
 		AUTH_CONFIG.clearToken();
 		AUTH_CONFIG.clearUserData();
-		navigate("/login");
-
-		dataServices
-			.Logout(API_ENDPOINTS.auth.logout)
-			.then((response) => {
-				setLogouting(false);
-				// showSnackbar(response.message, "success");
-			})
-			.catch((error) => {
-				setLogouting(false);
-				showSnackbar(error.message, "error");
-			});
+		navigate("/");
 	};
 
 	const scrollTop = () => {
@@ -128,6 +149,7 @@ const CamaroShowcaseHome = () => {
 				isLogouting={logouting}
 				setIsMenuOpen={setIsMenuOpen}
 				setContactUsOpen={setContactUsOpen}
+				hideNavbarOnMobile={hideNavbarOnMobile}
 			/>
 			<MobileDrawer
 				navLinks={navLinks}
@@ -146,7 +168,7 @@ const CamaroShowcaseHome = () => {
 				isLoading={isLoadingHighlights}
 			/>
 			<OurOffersSection />
-			<FooterSection />
+			<FooterSection ref={footerRef} />
 
 			<Fab
 				color='primary'
@@ -180,7 +202,10 @@ const TopAppBar = ({
 	isLogouting,
 	setIsMenuOpen,
 	setContactUsOpen,
+	hideNavbarOnMobile,
 }) => {
+	const theme = useTheme();
+	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 	const [scrolled, setScrolled] = useState(false);
 
 	useEffect(() => {
@@ -197,13 +222,14 @@ const TopAppBar = ({
 			elevation={scrolled ? 4 : 0}
 			sx={{
 				py: 1,
-				zIndex: 10000,
-				backgroundColor: scrolled ? "rgba(30, 30, 30, 0.9)" : "transparent",
+				zIndex: 100,
+				backgroundColor: scrolled ? "rgba(111, 111, 111, 0.9)" : "transparent",
 				color: "var(--text-color)",
 				px: { xs: 2, md: 4 },
 				backdropFilter: scrolled ? "blur(10px)" : "none",
 				transition:
-					"background-color 0.3s ease, box-shadow 0.3s ease, py 0.3s ease",
+					"background-color 0.3s ease, box-shadow 0.3s ease, py 0.3s ease, transform 0.3s ease",
+				transform: isMobile && hideNavbarOnMobile ? "translateY(-100%)" : "translateY(0)",
 			}}>
 			<Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
 				<Typography
@@ -248,16 +274,30 @@ const TopAppBar = ({
 				<Box sx={{ display: { xs: "none", md: "block" } }}>
 					{isLogin ? (
 						<Button
+							variant='contained'
 							sx={{
-								color: "var(--text-color)",
+								py: 1.5,
+								fontSize: "1rem",
+								fontWeight: "bold",
+								bgcolor: "error.main",
+								color: "white",
+								"&:hover": { bgcolor: "error.dark" },
+								"&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" },
 							}}
 							onClick={handleLogout}>
 							{isLogouting ? "Logging Out..." : "Sign Out"}
 						</Button>
 					) : (
 						<Button
+							variant='contained'
 							sx={{
-								color: "var(--text-color)",
+								py: 1.5,
+								fontSize: "1rem",
+								fontWeight: "bold",
+								bgcolor: "var(--primary-color)",
+								color: "var(--primary-contrast-text)",
+								"&:hover": { bgcolor: "var(--primary-color)" },
+								"&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" },
 							}}
 							component={Link}
 							to='/login'>
@@ -276,7 +316,16 @@ const TopAppBar = ({
 						</IconButton>
 					) : (
 						<Button
-							variant='outlined'
+							variant='contained'
+							sx={{
+								py: 1.5,
+								fontSize: "1rem",
+								fontWeight: "bold",
+								bgcolor: "var(--primary-color)",
+								color: "var(--primary-contrast-text)",
+								"&:hover": { bgcolor: "var(--primary-color)" },
+								"&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" },
+							}}
 							component={Link}
 							to='/login'>
 							Sign In
@@ -288,64 +337,77 @@ const TopAppBar = ({
 	);
 };
 
-const MobileDrawer = ({
-	navLinks,
-	isMenuOpen,
-	onMenuClose,
-	isLogin,
-	handleLogout,
-	isLogouting,
-	setContactUsOpen,
-}) => (
-	<Drawer
-		anchor='top'
-		open={isMenuOpen}
-		onClose={onMenuClose}
-		PaperProps={{
-			sx: {
-				backgroundColor: "#00000033",
-				width: "100%",
-				height: "auto",
-				top: "60px",
-			},
-		}}>
-		<Box
-			sx={{
-				width: "100%",
-			}}
-			role='presentation'
-			onClick={onMenuClose}
-			onKeyDown={onMenuClose}>
-			<List>
-				{navLinks.map((link) => (
-					<React.Fragment key={link.label}>
-						<ListItem
-							button
-							component={link.label === "Contact Us" ? "button" : Link}
-							to={link.to}
-							onClick={
-								link.label === "Contact Us"
-									? () => setContactUsOpen(true)
-									: null
-							}>
-							<ListItemText primary={link.label} />
+	const MobileDrawer = ({
+		navLinks,
+		isMenuOpen,
+		onMenuClose,
+		isLogin,
+		handleLogout,
+		isLogouting,
+		setContactUsOpen,
+	}) => (
+		<Drawer
+			anchor='top'
+			open={isMenuOpen}
+			onClose={onMenuClose}
+			PaperProps={{
+				sx: {
+					backgroundColor: "white",
+					width: "100%",
+					height: "auto",
+					top: "60px",
+				},
+			}}>
+			<Box
+				sx={{
+					width: "100%",
+				}}
+				role='presentation'
+				onClick={onMenuClose}
+				onKeyDown={onMenuClose}>
+				<List>
+					{navLinks.map((link) => (
+						<React.Fragment key={link.label}>
+							<ListItem
+								button
+								component={link.label === "Contact Us" ? "button" : Link}
+								to={link.to}
+								onClick={
+									link.label === "Contact Us"
+										? () => setContactUsOpen(true)
+										: null
+								}>
+								<ListItemText
+									primary={link.label}
+									sx={{ color: "var(--text-color)" }}
+								/>
+							</ListItem>
+							<Divider sx={{ my: 0.3 }} />
+						</React.Fragment>
+					))}
+					{isLogin && (
+						<ListItem>
+							<Button
+								variant='contained'
+								sx={{
+									py: 1.5,
+									fontSize: "1rem",
+									fontWeight: "bold",
+									bgcolor: "error.main",
+									color: "white",
+									"&:hover": { bgcolor: "error.dark" },
+									"&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" },
+									width: "100%",
+								}}
+								onClick={handleLogout}
+								disabled={isLogouting}>
+								{isLogouting ? "Logging Out..." : "Sign Out"}
+							</Button>
 						</ListItem>
-						<Divider sx={{ my: 0.3 }} />
-					</React.Fragment>
-				))}
-				{isLogin && (
-					<ListItem
-						button
-						onClick={handleLogout}
-						disabled={isLogouting}>
-						<ListItemText
-							primary={isLogouting ? "Logging Out..." : "Sign Out"}
-						/>
-					</ListItem>
-				)}
-			</List>
-		</Box>
-	</Drawer>
-);
+					)}
+				</List>
+			</Box>
+		</Drawer>
+	);
 
 export default CamaroShowcaseHome;

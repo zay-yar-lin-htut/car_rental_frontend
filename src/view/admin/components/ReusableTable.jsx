@@ -1,4 +1,5 @@
 import React from "react";
+import Loader from "../../../Loader";
 import {
 	Table,
 	TableBody,
@@ -8,8 +9,8 @@ import {
 	TableRow,
 	Paper,
 	TablePagination,
-	Skeleton,
 	Typography,
+	Skeleton,
 } from "@mui/material";
 
 const ReusableTable = ({
@@ -25,6 +26,7 @@ const ReusableTable = ({
 	title,
 	rowsPerPageOptions = [5, 10, 25],
 	keyExtractor,
+	onRowClick,
 }) => {
 	if (error) {
 		return (
@@ -89,7 +91,7 @@ const ReusableTable = ({
 												key={column.id}
 												align={column.align || "left"}
 												sx={{
-													color: "white",
+													color: "var(--text-color)",
 												}}>
 												<Skeleton variant='text' />
 											</TableCell>

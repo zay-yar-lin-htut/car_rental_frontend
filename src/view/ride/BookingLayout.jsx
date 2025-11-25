@@ -5,7 +5,8 @@ const BookingLayout = ({ title, children }) => {
 	return (
 		<Box
 			sx={{
-				py: 5,
+				pt: { xs: 12, md: 14 },
+				pb: 5,
 				px: 2,
 				minHeight: "100vh",
 				bgcolor: "var(--background-paper)",

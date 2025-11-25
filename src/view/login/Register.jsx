@@ -139,7 +139,7 @@ const Register = () => {
 				component='form'
 				noValidate
 				onSubmit={handleSubmit}
-				elevation={12}
+				elevation={3}
 				sx={{
 					p: { xs: 3, sm: 4 },
 					display: "flex",
@@ -147,13 +147,11 @@ const Register = () => {
 					alignItems: "center",
 					maxWidth: 450,
 					width: "100%",
-					borderRadius: 4,
+					borderRadius: 2,
 					position: "relative",
-					zIndex: 2, // Sits on top of the overlay
-					backgroundColor: "rgba(255, 255, 255, 0.1)",
-					backdropFilter: "blur(10px)",
-					border: "1px solid rgba(255, 255, 255, 0.2)",
-					color: "white",
+					zIndex: 2,
+					backgroundColor: "var(--background-paper)",
+					color: "var(--text-color)",
 				}}>
 				<Typography
 					component='h1'
@@ -163,13 +161,13 @@ const Register = () => {
 				</Typography>
 				<Typography
 					variant='body2'
-					sx={{ mt: 1, color: "grey.300" }}>
+					sx={{ mt: 1, color: "var(--text-secondary-color)" }}>
 					Already have an account?{" "}
 					<Link
 						to='/login'
 						style={{
 							textDecoration: "none",
-							color: "#64b5f6",
+							color: "var(--primary-color)",
 							fontWeight: 600,
 						}}>
 						Sign In
@@ -229,7 +227,7 @@ const Register = () => {
 									<IconButton
 										onClick={() => togglePasswordVisibility("password")}
 										edge='end'
-										sx={{ color: "grey.400" }}>
+										sx={{ color: "var(--text-secondary-color)" }}>
 										{showPassword.password ? <VisibilityOff /> : <Visibility />}
 									</IconButton>
 								</InputAdornment>
@@ -253,7 +251,7 @@ const Register = () => {
 									<IconButton
 										onClick={() => togglePasswordVisibility("confirmPassword")}
 										edge='end'
-										sx={{ color: "grey.400" }}>
+										sx={{ color: "var(--text-secondary-color)" }}>
 										{showPassword.confirmPassword ? (
 											<VisibilityOff />
 										) : (
@@ -272,19 +270,19 @@ const Register = () => {
 									checked={form.agreeTerms}
 									onChange={handleChange}
 									sx={{	
-										color: "grey.400",
-										"&.Mui-checked": { color: "white" },
+										color: "var(--text-secondary-color)",
+										"&.Mui-checked": { color: "var(--primary-color)" },
 									}}
 								/>
 							}
 							label={
 								<Typography
 									variant='body2'
-									sx={{ color: "grey.200" }}>
+									sx={{ color: "var(--text-secondary-color)" }}>
 									I agree to the{" "}
 									<Link
 										to='/terms'
-										style={{ color: "#64b5f6" }}>
+										style={{ color: "var(--primary-color)" }}>
 										Terms and Conditions
 									</Link>
 								</Typography>
@@ -306,10 +304,10 @@ const Register = () => {
 							mt: 1,
 							fontSize: "1rem",
 							fontWeight: "bold",
-							bgcolor: "rgba(255, 255, 255, 0.9)",
-							color: "black",
-							"&:hover": { bgcolor: "white" },
-							"&.Mui-disabled": { bgcolor: "rgba(255, 255, 255, 0.5)" },
+							bgcolor: "var(--primary-color)",
+							color: "var(--primary-contrast-text)",
+							"&:hover": { bgcolor: "var(--primary-color)" },
+							"&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" },
 						}}>
 						Register
 					</LoadingButton>
@@ -321,15 +319,15 @@ const Register = () => {
 
 // Custom style object for TextFields to keep code clean and consistent
 const customTextFieldStyle = {
-	"& .MuiInputBase-input": { color: "white" },
-	"& .MuiInputLabel-root": { color: "grey.400" },
-	"& .MuiInputLabel-root.Mui-focused": { color: "white" },
-	"& .MuiFormHelperText-root": { color: "#ff8a80" },
+	"& .MuiInputBase-input": { color: "var(--text-color)" },
+	"& .MuiInputLabel-root": { color: "var(--text-secondary-color)" },
+	"& .MuiInputLabel-root.Mui-focused": { color: "var(--primary-color)" },
+	"& .MuiFormHelperText-root": { color: "var(--error-color)" },
 	"& .MuiOutlinedInput-root": {
-		"& fieldset": { borderColor: "rgba(255, 255, 255, 0.3)" },
-		"&:hover fieldset": { borderColor: "rgba(255, 255, 255, 0.5)" },
-		"&.Mui-focused fieldset": { borderColor: "white" },
-		"&.Mui-error fieldset": { borderColor: "#e57373" },
+		"& fieldset": { borderColor: "var(--divider-color)" },
+		"&:hover fieldset": { borderColor: "var(--primary-color)" },
+		"&.Mui-focused fieldset": { borderColor: "var(--primary-color)" },
+		"&.Mui-error fieldset": { borderColor: "var(--error-color)" },
 	},
 };
 

@@ -21,30 +21,41 @@ import { useSnackbar } from "../../../contexts/ErrorMessage";
 import { API_ENDPOINTS } from "../../../services/Configuration";
 import OurLocationsPage from "./OurLocation";
 
-const LocationSelector = ({ label, value, onClick }) => {
+// Simple in-memory cache to hold locations across component mounts
+let locationsCache = null;
+
+const LocationSelector = ({ label, value, onClick, error }) => {
 	return (
-		<Paper
-			onClick={onClick}
-			sx={{
-				p: "14px",
-				display: "flex",
-				alignItems: "center",
-				cursor: "pointer",
-				backgroundColor: "white",
-				"&:hover": {
-					backgroundColor: "#f0f0f0",
-				},
-			}}>
-			<LocationOnIcon sx={{ mr: 1, color: "text.secondary" }} />
-			<Typography
-				variant='body1'
+		<Box>
+			<Paper
+				onClick={onClick}
 				sx={{
-					color: value ? "text.primary" : "text.secondary",
-					flexGrow: 1,
+					p: "14px",
+					display: "flex",
+					alignItems: "center",
+					cursor: "pointer",
+					backgroundColor: "white",
+					border: error ? "1px solid #f44336" : "1px solid transparent",
+					"&:hover": {
+						backgroundColor: "#f0f0f0",
+					},
 				}}>
-				{value ? value.name || value : label}
-			</Typography>
-		</Paper>
+				<LocationOnIcon sx={{ mr: 1, color: error ? "#f44336" : "text.secondary" }} />
+				<Typography
+					variant='body1'
+					sx={{
+						color: value ? "text.primary" : error ? "#f44336" : "text.secondary",
+						flexGrow: 1,
+					}}>
+					{value ? value.name || value : label}
+				</Typography>
+			</Paper>
+			{error && (
+				<Typography variant='caption' color='error' sx={{ mt: 0.5, ml: 1 }}>
+					Please select a location
+				</Typography>
+			)}
+		</Box>
 	);
 };
 
@@ -61,7 +72,7 @@ const FutureDatePicker = ({
 			label={label}
 			value={value}
 			onChange={onChange}
-			minDate={minDate || dayjs().add(1, "day")}
+			minDate={minDate || dayjs().add(1, "day").startOf("day")}
 			maxDate={maxDate}
 			slotProps={{
 				...slotProps,
@@ -81,6 +92,7 @@ const IntroSection = () => {
 	const [openDialog, setOpenDialog] = React.useState(false);
 	const [editingMode, setEditingMode] = React.useState("pickup");
 	const [errors, setErrors] = React.useState({});
+	const [locationErrors, setLocationErrors] = React.useState({ pickup: false, dropoff: false });
 	const {
 		formValues,
 		setFormValues,
@@ -88,7 +100,12 @@ const IntroSection = () => {
 		setExpanded,
 		isLoading,
 		setIsLoading,
+		resetForm,
 	} = useIntroForm();
+
+	useEffect(() => {
+		resetForm();
+	}, []);
 
 	useEffect(() => {
 		const getOfficeLocation = async () => {
@@ -99,6 +116,7 @@ const IntroSection = () => {
 					API_ENDPOINTS.location.getOffice
 				);
 
+				locationsCache = response.data; // Store in cache
 				setLocations(response.data);
 			} catch (error) {
 			} finally {
@@ -106,8 +124,22 @@ const IntroSection = () => {
 			}
 		};
 
-		getOfficeLocation();
+		// Only fetch data if our cache is empty.
+		if (!locationsCache) {
+			getOfficeLocation();
+		} else {
+			setLocations(locationsCache);
+		}
 	}, []);
+
+	React.useEffect(() => {
+		if (expanded) {
+			setLocationErrors({
+				pickup: !formValues.pickupLocation?.name,
+				dropoff: !formValues.dropSameAsPickup && !formValues.dropoffLocation?.name,
+			});
+		}
+	}, [expanded, formValues]);
 
 	const handleClose = () => {
 		setOpenDialog(false);
@@ -150,7 +182,14 @@ const IntroSection = () => {
 	};
 
 	const handleDateChange = (field, value) => {
-		setFormValues({ ...formValues, [field]: value });
+		const updated = { ...formValues, [field]: value };
+		if (field === "pickupDate" && !formValues.pickupTime) {
+			updated.pickupTime = dayjs().hour(9).minute(0);
+		}
+		if (field === "dropDate" && !formValues.dropTime) {
+			updated.dropTime = dayjs().hour(10).minute(0);
+		}
+		setFormValues(updated);
 	};
 
 	const handleTimeChange = (field, value) => {
@@ -162,8 +201,8 @@ const IntroSection = () => {
 	};
 
 	const getValidationMessage = () => {
-		if (!formValues.pickupLocation) return "Please select a pickup location.";
-		if (!formValues.dropoffLocation)
+		if (!formValues.pickupLocation?.name) return "Please select a pickup location.";
+		if (!formValues.dropSameAsPickup && !formValues.dropoffLocation?.name)
 			return "Please select a drop-off location.";
 		if (!formValues.pickupDate) return "Please select a pickup date.";
 		if (!formValues.dropDate) return "Please select a drop-off date.";
@@ -187,8 +226,16 @@ const IntroSection = () => {
 		const validationMessage = getValidationMessage();
 		if (validationMessage) {
 			showSnackbar(validationMessage, "error");
+			// Set location errors for visual feedback
+			setLocationErrors({
+				pickup: !formValues.pickupLocation?.name,
+				dropoff: !formValues.dropSameAsPickup && !formValues.dropoffLocation?.name,
+			});
 			return;
 		}
+
+		// Clear errors on successful validation
+		setLocationErrors({ pickup: false, dropoff: false });
 
 		const updatedFormValues = { ...formValues };
 		if (!updatedFormValues.pickupTime) {
@@ -220,10 +267,12 @@ const IntroSection = () => {
 
 	const handlePickupSelect = (location) => {
 		setFormValues((prev) => ({ ...prev, pickupLocation: location }));
+		setLocationErrors(prev => ({ ...prev, pickup: false }));
 	};
 
 	const handleDropoffSelect = (location) => {
 		setFormValues((prev) => ({ ...prev, dropoffLocation: location }));
+		setLocationErrors(prev => ({ ...prev, dropoff: false }));
 	};
 
 	return (
@@ -240,7 +289,7 @@ const IntroSection = () => {
 			<VideoBackground1 videoSrc='/bg-2.mp4' />
 
 			<Box sx={{ zIndex: 2, width: "100%", maxWidth: 600 }}>
-				<div className='bg-gray-300 p-8 rounded-lg bg-opacity-30'>
+				<div className='bg-gray-400 p-8 rounded-lg bg-opacity-30'>
 					<Typography
 						variant='h4'
 						fontWeight={800}
@@ -285,7 +334,10 @@ const IntroSection = () => {
 									setEditingMode("pickup");
 									setOpenDialog(true);
 									if (!expanded) setExpanded(true);
+									// Clear error when clicked
+									setLocationErrors(prev => ({ ...prev, pickup: false }));
 								}}
+								error={locationErrors.pickup}
 							/>
 						)}
 
@@ -313,7 +365,10 @@ const IntroSection = () => {
 										onClick={() => {
 											setEditingMode("dropoff");
 											setOpenDialog(true);
+											// Clear error when clicked
+											setLocationErrors(prev => ({ ...prev, dropoff: false }));
 										}}
+										error={locationErrors.dropoff}
 									/>
 								)}
 
@@ -360,7 +415,7 @@ const IntroSection = () => {
 									variant='contained'
 									color='primary'
 									size='large'
-									disabled={isLoading}
+									disabled={isLoading || !(formValues.pickupLocation?.name && (formValues.dropSameAsPickup || formValues.dropoffLocation?.name) && formValues.pickupDate && formValues.dropDate && formValues.pickupTime && formValues.dropTime)}
 									sx={{
 										py: 1.5,
 										fontFamily: "'Orbitron', sans-serif",

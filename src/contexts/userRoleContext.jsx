@@ -1,29 +1,45 @@
-import { createContext, useContext, useMemo } from "react";
+import {
+	createContext,
+	useContext,
+	useState,
+	useMemo,
+	useCallback,
+} from "react";
 import { AUTH_CONFIG } from "../services/Configuration";
 
-export const UserRoleContext = createContext({ role: null });
+const getRoleFromUser = (user) => {
+	if (!user) return null;
+	switch (user.user_type_id) {
+		case 3:
+			return "admin";
+		case 2:
+			return "staff";
+		case 1:
+			return "user";
+		default:
+			return null;
+	}
+};
+
+export const UserRoleContext = createContext({
+	role: null,
+	updateRole: () => {},
+});
 
 export const UserRoleProvider = ({ children }) => {
-	const user = AUTH_CONFIG.getUserData();
+	const [role, setRole] = useState(() =>
+		getRoleFromUser(AUTH_CONFIG.getUserData())
+	);
 
-	const role = useMemo(() => {
-		if (!user) {
-			return null;
-		}
-		switch (user.user_type_id) {
-			case 3:
-				return "admin";
-			case 2:
-				return "staff";
-			case 1:
-				return "user";
-			default:
-				return null;
-		}
-	}, [user]);
+	const updateRole = useCallback((user) => {
+		const newRole = getRoleFromUser(user);
+		setRole(newRole);
+	}, []);
+
+	const value = useMemo(() => ({ role, updateRole }), [role, updateRole]);
 
 	return (
-		<UserRoleContext.Provider value={{ role }}>
+		<UserRoleContext.Provider value={value}>
 			{children}
 		</UserRoleContext.Provider>
 	);
