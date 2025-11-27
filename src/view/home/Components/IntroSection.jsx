@@ -44,10 +44,10 @@ const LocationSelector = ({ label, value, onClick, error }) => {
 				<Typography
 					variant='body1'
 					sx={{
-						color: value ? "text.primary" : error ? "#f44336" : "text.secondary",
+						color: (value && value.name) ? "text.primary" : error ? "#f44336" : "text.secondary",
 						flexGrow: 1,
 					}}>
-					{value ? value.name || value : label}
+					{(value && value.name) ? value.name : label}
 				</Typography>
 			</Paper>
 			{error && (

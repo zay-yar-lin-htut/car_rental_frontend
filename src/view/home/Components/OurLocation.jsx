@@ -23,8 +23,7 @@ import DirectionsIcon from "@mui/icons-material/Directions";
 import CloseIcon from "@mui/icons-material/Close";
 import { createDataServices } from "../../../services/DataServices";
 import { API_ENDPOINTS, AUTH_CONFIG } from "../../../services/Configuration";
-
-const Map = lazy(() => import("./Map"));
+import Map from "./Map";
 
 const { retrieve } = createDataServices();
 
@@ -47,20 +46,54 @@ const OurLocationsPage = ({
 
 	const filteredLocations = locations.filter(loc => loc.name.toLowerCase().includes(searchTerm.toLowerCase()));
 	const filteredPreferred = preferredLocations.filter(loc => loc.name.toLowerCase().includes(searchTerm.toLowerCase()));
-	const displayLocations = [
-		...filteredLocations,
-		...mapSuggestions.map(s => ({
-			name: s.display_name,
-			latitude: s.lat,
-			longitude: s.lon,
-			isSuggestion: true,
-			id: s.place_id
-		}))
-	];
-	const [currentPosition, setCurrentPosition] = useState(null);
-	const [showRoute, setShowRoute] = useState(false);
-	const [selectionMode, setSelectionMode] = useState("pickup");
-	const [activeMarker, setActiveMarker] = useState(null);
+  const displayLocations = [
+ 		...filteredLocations,
+ 		...mapSuggestions.map(s => ({
+ 			name: s.display_name,
+ 			latitude: s.lat,
+ 			longitude: s.lon,
+ 			isSuggestion: true,
+ 			id: s.place_id
+ 		}))
+ 	];
+  const [currentPosition, setCurrentPosition] = useState(null);
+
+  const fetchCitiesForLocations = async (locations) => {
+    try {
+      const TOMTOM_KEY = import.meta.env.VITE_TOMTOM_KEY;
+      if (!TOMTOM_KEY) return;
+
+      const cities = new Set();
+
+      for (const location of locations) {
+        try {
+          const response = await fetch(
+            `https://api.tomtom.com/search/2/reverseGeocode/${location.position[0]},${location.position[1]}.json?key=${TOMTOM_KEY}`
+          );
+          const data = await response.json();
+          const address = data.addresses?.[0]?.address;
+          if (address) {
+            // Try to get city, municipality, or town
+            const city = address.municipality || address.city || address.town || address.village;
+            if (city) {
+              cities.add(city.toLowerCase());
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching city for location:", location, error);
+        }
+      }
+
+      setAllowedCities(Array.from(cities));
+    } catch (error) {
+      console.error("Error fetching cities for locations:", error);
+    }
+  };
+  const [showRoute, setShowRoute] = useState(false);
+  const [selectionMode, setSelectionMode] = useState("pickup");
+  const [activeMarker, setActiveMarker] = useState(null);
+  const [allowedCities, setAllowedCities] = useState([]);
+  const [locationError, setLocationError] = useState(null);
 
 
 
@@ -76,6 +109,11 @@ const OurLocationsPage = ({
 							position: Array.isArray(loc.location) ? loc.location.map(coord => parseFloat(coord)) : [parseFloat(loc.location[0] || 0), parseFloat(loc.location[1] || 0)]
 						}));
 						setLocations(mappedLocations);
+
+						// Get the cities/towns for all office locations
+						if (mappedLocations.length > 0) {
+							await fetchCitiesForLocations(mappedLocations);
+						}
 					}
 				} catch (error) {
 					console.error('Error fetching locations:', error);
@@ -93,9 +131,9 @@ const OurLocationsPage = ({
 								position: Array.isArray(loc.location) ? loc.location.map(coord => parseFloat(coord)) : [parseFloat(loc.location[0] || 0), parseFloat(loc.location[1] || 0)]
 							}));
 							console.log('Mapped preferred:', mappedPreferred);
-							if (mappedPreferred.length === 0) {
-								mappedPreferred.push({ name: 'Dummy Preferred', position: [16.8, 96.1] });
-							}
+							// if (mappedPreferred.length === 0) {
+							// 	mappedPreferred.push({ name: 'Dummy Preferred', position: [16.8, 96.1] });
+							// }
 							setPreferredLocations(mappedPreferred);
 							console.log('Preferred locations set to state');
 						}
@@ -136,63 +174,106 @@ const OurLocationsPage = ({
 
 
 
-	const handleMapClick = async (latlng) => {
-		try {
-			const TOMTOM_KEY = import.meta.env.VITE_TOMTOM_KEY;
-			if (!TOMTOM_KEY) {
-				console.error("TomTom key not found");
-				setActiveMarker({
-					position: [latlng.lat, latlng.lng],
-					name: "Selected Location",
-				});
-				setSelectedLocation(null);
-				return;
-			}
-			const response = await fetch(
-				`https://api.tomtom.com/search/2/reverseGeocode/${latlng.lat},${latlng.lng}.json?key=${TOMTOM_KEY}`
-			);
-			const data = await response.json();
-			const location = {
-				position: [latlng.lat, latlng.lng],
-				name: data.addresses[0]?.address.freeformAddress || "Selected Location",
-			};
-			setActiveMarker(location);
-			setSelectedLocation(null); // Deselect any office
-		} catch (error) {
-			console.error("Error fetching location name:", error);
-			setActiveMarker({
-				position: [latlng.lat, latlng.lng],
-				name: "Selected Location",
-			});
-			setSelectedLocation(null);
-		}
-	};
+  const handleMapClick = async (latlng) => {
+ 		try {
+ 			const TOMTOM_KEY = import.meta.env.VITE_TOMTOM_KEY;
+ 			if (!TOMTOM_KEY) {
+ 				console.error("TomTom key not found");
+ 				setActiveMarker({
+ 					position: [latlng.lat, latlng.lng],
+ 					name: "Selected Location",
+ 				});
+ 				setSelectedLocation(null);
+ 				setLocationError(null);
+ 				return;
+ 			}
+ 			const response = await fetch(
+ 				`https://api.tomtom.com/search/2/reverseGeocode/${latlng.lat},${latlng.lng}.json?key=${TOMTOM_KEY}`
+ 			);
+ 			const data = await response.json();
+ 			const address = data.addresses?.[0]?.address;
+ 			const location = {
+ 				position: [latlng.lat, latlng.lng],
+ 				name: address?.freeformAddress || "Selected Location",
+ 			};
 
-	const handleLocationSelect = (loc) => {
-		setSelectedLocation(loc);
-		setShowRoute(false);
-		// Handle both office locations (position array) and map suggestions (latitude/longitude)
-		const position = loc.latitude && loc.longitude
-			? [loc.latitude, loc.longitude]
-			: loc.position;
-		setActiveMarker({ position, name: loc.name });
-	};
+ 			// Check if location is in allowed cities
+ 			if (allowedCities.length > 0 && address) {
+ 				const selectedCity = (address.municipality || address.city || address.town || address.village)?.toLowerCase();
+ 				if (selectedCity && !allowedCities.includes(selectedCity)) {
+ 					const cityList = allowedCities.map(city => city.charAt(0).toUpperCase() + city.slice(1)).join(' or ');
+ 					setLocationError(`Location must be within ${cityList}. Please select a location in one of these cities.`);
+ 					setActiveMarker(null);
+ 					return;
+ 				}
+ 			}
 
-	const clearAllData = () => {
-		setLocations([]);
-		setPreferredLocations([]);
-		setSelectedLocation(null);
-		setSearchTerm("");
-		setMapSuggestions([]);
-		setCurrentPosition(null);
-		setShowRoute(false);
-		setActiveMarker(null);
-	};
+ 			setActiveMarker(location);
+ 			setSelectedLocation(null); // Deselect any office
+ 			setLocationError(null);
+ 		} catch (error) {
+ 			console.error("Error fetching location name:", error);
+ 			setActiveMarker({
+ 				position: [latlng.lat, latlng.lng],
+ 				name: "Selected Location",
+ 			});
+ 			setSelectedLocation(null);
+ 			setLocationError(null);
+ 		}
+ 	};
 
-	const handleClose = () => {
-		clearAllData();
-		onClose();
-	};
+  const handleLocationSelect = async (loc) => {
+ 		// For map suggestions, validate city
+ 		if (loc.isSuggestion && allowedCities.length > 0) {
+ 			try {
+ 				const TOMTOM_KEY = import.meta.env.VITE_TOMTOM_KEY;
+ 				if (TOMTOM_KEY) {
+ 					const response = await fetch(
+ 						`https://api.tomtom.com/search/2/reverseGeocode/${loc.latitude},${loc.longitude}.json?key=${TOMTOM_KEY}`
+ 					);
+ 					const data = await response.json();
+ 					const address = data.addresses?.[0]?.address;
+ 					if (address) {
+ 						const selectedCity = (address.municipality || address.city || address.town || address.village)?.toLowerCase();
+ 						if (selectedCity && !allowedCities.includes(selectedCity)) {
+ 							const cityList = allowedCities.map(city => city.charAt(0).toUpperCase() + city.slice(1)).join(' or ');
+ 							setLocationError(`Location must be within ${cityList}. Please select a location in one of these cities.`);
+ 							return;
+ 						}
+ 					}
+ 				}
+ 			} catch (error) {
+ 				console.error("Error validating suggestion location:", error);
+ 			}
+ 		}
+
+ 		setSelectedLocation(loc);
+ 		setShowRoute(false);
+ 		// Handle both office locations (position array) and map suggestions (latitude/longitude)
+ 		const position = loc.latitude && loc.longitude
+ 			? [loc.latitude, loc.longitude]
+ 			: loc.position;
+ 		setActiveMarker({ position, name: loc.name });
+ 		setLocationError(null);
+ 	};
+
+  const clearAllData = () => {
+ 		setLocations([]);
+ 		setPreferredLocations([]);
+ 		setSelectedLocation(null);
+ 		setSearchTerm("");
+ 		setMapSuggestions([]);
+ 		setCurrentPosition(null);
+ 		setShowRoute(false);
+ 		setActiveMarker(null);
+ 		setLocationError(null);
+ 	};
+
+  const handleClose = () => {
+ 		clearAllData();
+ 		setLocationError(null);
+ 		onClose();
+ 	};
 
 	const handleConfirmSelection = async () => {
 		if (activeMarker) {
@@ -230,12 +311,14 @@ const OurLocationsPage = ({
 			maxWidth='lg'
 			fullWidth
 			fullScreen={isMobile}
+			disableEnforceFocus={true}
+			disablePortal={true}
 			PaperProps={{
 				sx: {
 					width: "100%",
 					height: isMobile ? "100vh" : "85vh",
 					backgroundColor: "var(--background-paper)",
-					zIndex: 200,
+					zIndex: 1400,
 				},
 			}}>
 			<DialogContent sx={{ p: 0, height: "100%", display: 'flex', flexDirection: isMobile ? 'column' : 'row' }}>
@@ -398,24 +481,39 @@ const OurLocationsPage = ({
 						</Button>
 					</Box>
 				</Paper>
-				{/* MAP */}
-				<Box sx={{ flex: 1, height: isMobile ? '60vh' : '100%', position: 'relative' }}>
-					<Suspense fallback={<div>Loading Map...</div>}>
-						<Map
-							selectedLocation={selectedLocation}
-							currentPosition={currentPosition}
-							showRoute={showRoute}
-							onMapClick={handleMapClick}
-							activeMarker={activeMarker}
-							onPickupSelect={onPickupSelect}
-							onDropoffSelect={onDropoffSelect}
-							onClose={onClose}
-							selectionMode={selectionMode}
-							searchTerm={searchTerm}
-							onSuggestionsChange={setMapSuggestions}
-						/>
-					</Suspense>
-				</Box>
+ 				{/* MAP */}
+ 				<Box sx={{ flex: 1, height: isMobile ? '60vh' : '100%', position: 'relative' }}>
+ 					<Map
+ 						selectedLocation={selectedLocation}
+ 						currentPosition={currentPosition}
+ 						showRoute={showRoute}
+ 						onMapClick={handleMapClick}
+ 						activeMarker={activeMarker}
+ 						onPickupSelect={onPickupSelect}
+ 						onDropoffSelect={onDropoffSelect}
+ 						onClose={onClose}
+ 						selectionMode={selectionMode}
+ 						searchTerm={searchTerm}
+ 						onSuggestionsChange={setMapSuggestions}
+ 					/>
+ 					{locationError && (
+ 						<Box
+ 							sx={{
+ 								position: 'absolute',
+ 								top: 10,
+ 								left: 10,
+ 								right: 10,
+ 								backgroundColor: 'error.main',
+ 								color: 'error.contrastText',
+ 								padding: 2,
+ 								borderRadius: 1,
+ 								zIndex: 1000,
+ 							}}
+ 						>
+ 							<Typography variant="body2">{locationError}</Typography>
+ 						</Box>
+ 					)}
+ 				</Box>
 			</DialogContent>
 		</Dialog>
 	);

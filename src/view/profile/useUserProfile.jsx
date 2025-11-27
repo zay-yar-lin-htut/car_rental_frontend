@@ -21,7 +21,7 @@ export const useUserProfile = () => {
 		setProfileLoading(true);
 		try {
 			const response = await dataServices.retrieve(
-				API_ENDPOINTS.user.base,
+				API_ENDPOINTS.users.base,
 				API_ENDPOINTS.users.getUserProfile
 			);
 			setUser(response.data);
@@ -50,13 +50,9 @@ export const useUserProfile = () => {
 	}, []);
 
 	useEffect(() => {
-		if (!user) {
-			fetchUserProfile();
-		} else {
-			setProfileLoading(false);
-		}
+		fetchUserProfile();
 		checkIsHaveFine();
-	}, [user, fetchUserProfile, checkIsHaveFine]);
+	}, [fetchUserProfile, checkIsHaveFine]);
 
 	const handleOpenDialog = useCallback(() => {
 		if (isSaving) return;

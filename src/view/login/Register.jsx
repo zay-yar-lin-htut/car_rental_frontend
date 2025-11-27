@@ -84,24 +84,22 @@ const Register = () => {
 		if (!validateForm()) return;
 		setLoading(true);
 		try {
-			await dataServices
-				.Register(
-					{
-						name: form.name,
-						email: form.email,
-						phone: form.phone,
-						password: form.password,
-						password_confirmation: form.confirmPassword,
-					},
-					API_ENDPOINTS.auth.register
-				)
-				.then((response) => {
-					showSnackbar(response.message, "success");
-					navigate("/login");
-				})
-				.catch((error) => {
-					showSnackbar(error.message, "error");
-				});
+			const response = await dataServices.Register(
+				{
+					name: form.name,
+					email: form.email,
+					phone: form.phone,
+					password: form.password,
+					password_confirmation: form.confirmPassword,
+				},
+				API_ENDPOINTS.auth.register
+			);
+			if (!response.success) {
+				showSnackbar(response.message, "error");
+				return;
+			}
+			showSnackbar(response.message, "success");
+			navigate("/login");
 		} catch (err) {
 			showSnackbar(err.message || "Registration failed", "error");
 		}

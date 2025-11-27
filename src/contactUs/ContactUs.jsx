@@ -25,6 +25,17 @@ const ContactUs = ({ open, onClose }) => {
 		description: "",
 	});
 	const [loading, setLoading] = useState(false); // Add loading state
+	const [errors, setErrors] = useState({});
+
+	const validateForm = () => {
+		const newErrors = {};
+		if (!formValues.email.trim()) newErrors.email = "Email is required";
+		else if (!/\S+@\S+\.\S+/.test(formValues.email)) newErrors.email = "Invalid email address";
+		if (!formValues.title.trim()) newErrors.title = "Title is required";
+		if (!formValues.description.trim()) newErrors.description = "Description is required";
+		setErrors(newErrors);
+		return Object.keys(newErrors).length === 0;
+	};
 
 	const handleChange = (event) => {
 		const { name, value } = event.target;
@@ -32,10 +43,14 @@ const ContactUs = ({ open, onClose }) => {
 			...formValues,
 			[name]: value,
 		});
+		if (errors[name]) {
+			setErrors((prev) => ({ ...prev, [name]: null }));
+		}
 	};
 
 	const handleSubmit = async (event) => {
 		event.preventDefault();
+		if (!validateForm()) return;
 		setLoading(true); // Set loading to true on submission
 		try {
 			const res = await dataServices.retrievePOST(
@@ -115,6 +130,8 @@ const ContactUs = ({ open, onClose }) => {
 								value={formValues.email}
 								onChange={handleChange}
 								disabled={loading} // Disable field during loading
+								error={!!errors.email}
+								helperText={errors.email}
 							/>
 							<TextField
 								fullWidth
@@ -135,6 +152,8 @@ const ContactUs = ({ open, onClose }) => {
 								value={formValues.title}
 								onChange={handleChange}
 								disabled={loading} // Disable field during loading
+								error={!!errors.title}
+								helperText={errors.title}
 							/>
 							<TextField
 								fullWidth
@@ -147,6 +166,8 @@ const ContactUs = ({ open, onClose }) => {
 								value={formValues.description}
 								onChange={handleChange}
 								disabled={loading} // Disable field during loading
+								error={!!errors.description}
+								helperText={errors.description}
 							/>{" "}
 							<Box sx={{ flexGrow: 1 }} /> {/* Spacer */}
 						</Box>
@@ -157,7 +178,7 @@ const ContactUs = ({ open, onClose }) => {
 				<Box
 					sx={{
 						display: "flex",
-						justifyContent: "center",
+						justifyContent: "flex-end",
 						gap: 2,
 						mt: 0,
 						width: "100%",

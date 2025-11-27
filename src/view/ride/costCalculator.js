@@ -19,11 +19,25 @@ export const calculateRentalCost = (formValues, vehicle) => {
 
     const totalHours = dropDateTime.diff(pickupDateTime, "hour", true);
 
-    if (totalHours < 23) {
+    if (totalHours <= 24) {
         const hours = Math.ceil(totalHours <= 0 ? 1 : totalHours);
-        return { totalCost: hours * price_per_hour, calculationText: `${hours} hour${hours > 1 ? "s" : ""} at USD ${price_per_hour}/hour` };
+        const cost = hours * price_per_hour;
+        return {
+            totalCost: cost,
+            rentalCost: cost,
+            calculationText: `${hours} hour${hours > 1 ? "s" : ""} × ${price_per_hour} MMK = ${cost} MMK`,
+            breakdown: { hours, days: 0 }
+        };
     } else {
+        // Round up to full days - any partial day counts as a full day
         const days = Math.ceil(totalHours / 24);
-        return { totalCost: days * price_per_day, calculationText: `${days} day${days > 1 ? "s" : ""} at USD ${price_per_day}/day` };
+        const cost = days * price_per_day;
+        const breakdownText = `${days} day${days > 1 ? "s" : ""} × ${price_per_day} MMK/day = ${cost} MMK`;
+        return {
+            totalCost: cost,
+            rentalCost: cost,
+            calculationText: breakdownText,
+            breakdown: { hours: totalHours % 24, days }
+        };
     }
 };

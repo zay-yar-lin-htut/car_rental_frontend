@@ -18,18 +18,13 @@ import {
 	Select,
 	MenuItem,
 	FormControl,
+	useTheme,
 	Pagination,
 	Fab,
 	Zoom,
-	useTheme,
-	AppBar,
-	Toolbar,
-	useMediaQuery,
-	IconButton,
 } from "@mui/material";
 
 import { useNavigate, Link, useSearchParams } from "react-router";
-import MenuIcon from "@mui/icons-material/Menu";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { createDataServices } from "../../services/DataServices";
 import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
@@ -44,6 +39,7 @@ import InputLabel from "@mui/material/InputLabel";
 import BookingLayout from "./BookingLayout";
 import FullPageLoader from "../../common/FullPageLoader";
 import dayjs from "dayjs";
+import CommonAppBar from "../common/AppBar";
 
 
 
@@ -68,6 +64,17 @@ const Ride = () => {
 	const navigate = useNavigate();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const searchBy = useMemo(() => searchParams.get('search_by') || '', [searchParams]);
+	const [isMenuOpen, setIsMenuOpen] = useState(false);
+	const [isContactUsOpen, setContactUsOpen] = useState(false);
+	const [logouting, setLogouting] = useState(false);
+	const isLogin = AUTH_CONFIG.isAuthenticated();
+
+	const handleLogout = () => {
+		setLogouting(true);
+		AUTH_CONFIG.clearToken();
+		AUTH_CONFIG.clearUserData();
+		navigate("/");
+	};
 	useEffect(() => {
 		setSearchTerm(searchBy);
 	}, [searchBy]);
@@ -134,14 +141,24 @@ const Ride = () => {
 						.slice(0, 19)
 						.replace("T", " ")
 				: "";
+			const getCoords = (location) => {
+				if (!location) return [null, null];
+				const coords = location.location || location.position || location.latlng;
+				return Array.isArray(coords) ? coords : [null, null];
+			};
+
+			const [pickupLat, pickupLon] = getCoords(formValues.pickupLocation);
 
 			const params = new URLSearchParams({
 				first: page,
 				max: max,
 				pickup_datetime: pickupDateTime,
 				dropoff_datetime: dropoffDateTime,
+				pickup_latitude: pickupLat,
+				pickup_longitude: pickupLon,
 				car_type_id: carTypeId,
 				fuel_type: fuelType,
+				availibility: true,
 				asc_total: sortOrder === "Low to High" ? "true" : "false",
 			});
 			if (searchBy) params.append('search_by', searchBy);
@@ -219,7 +236,7 @@ const Ride = () => {
 						variant='body2'
 						component='span'
 						color='text.secondary'>
-						{" USD total"}
+						{" MMK total"}
 					</Typography>
 				</Box>
 			</Box>
@@ -232,16 +249,16 @@ const Ride = () => {
 		window.scrollTo(0, 0);
 	};
 
-	const handleBackToSelect = () => {
-		// Reset form values but keep the vehicle type for context if needed,
-		// or reset completely by removing the vehicleType as well.
-		setFormValues((prev) => ({
-			...prev,
-			pickupLocation: "",
-			dropoffLocation: "",
-		}));
-		navigate("/");
-	};
+ 	const handleBackToSelect = () => {
+ 		// Reset form values but keep the vehicle type for context if needed,
+ 		// or reset completely by removing the vehicleType as well.
+ 		setFormValues((prev) => ({
+ 			...prev,
+ 			pickupLocation: null,
+ 			dropoffLocation: null,
+ 		}));
+ 		navigate("/");
+ 	};
 
 	const handlePageChange = (event, value) => {
 		setPage(value);
@@ -259,102 +276,20 @@ const Ride = () => {
 		return <Review onBackToSelect={handleBackToSelect} />;
 	}
 
-	const TopAppBar = () => {
-		const theme = useTheme();
-		const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-		const [scrolled, setScrolled] = useState(false);
 
-		useEffect(() => {
-			const handleScroll = () => {
-				setScrolled(window.scrollY > 10);
-			};
-			window.addEventListener("scroll", handleScroll);
-			return () => window.removeEventListener("scroll", handleScroll);
-		}, []);
-
-		const handleLogout = () => {
-			AUTH_CONFIG.clearToken();
-			AUTH_CONFIG.clearUserData();
-			navigate("/");
-		};
-
-		const isLogin = AUTH_CONFIG.isAuthenticated();
 
 		return (
-			<AppBar
-				position='fixed'
-				elevation={scrolled ? 4 : 0}
-				sx={{
-					py: 1,
-					zIndex: 100,
-					backgroundColor: "rgba(111, 111, 111, 0.9)",
-					color: "var(--text-color)",
-					px: { xs: 2, md: 4 },
-					backdropFilter: scrolled ? "blur(10px)" : "none",
-					transition:
-						"background-color 0.3s ease, box-shadow 0.3s ease, py 0.3s ease, transform 0.3s ease",
-				}}>
-				<Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
-					<Typography
-						variant='h6'
-						component='div'
-						sx={{
-							fontWeight: "bold",
-							fontFamily: "'Orbitron', sans-serif",
-							fontSize: { xs: "0.9rem", sm: "1.2rem", md: "1.5rem" },
-						}}>
-						JOURNEY WHEEL
-					</Typography>
-					<Box sx={{ display: { xs: "none", md: "block" } }}>
-						<Button
-							variant='contained'
-							sx={{
-								py: 1.5,
-								fontSize: "1rem",
-								fontWeight: "bold",
-								bgcolor: "error.main",
-								color: "white",
-								"&:hover": { bgcolor: "error.dark" },
-								"&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" },
-							}}
-							onClick={handleLogout}>
-							Sign Out
-						</Button>
-					</Box>
-					<Box sx={{ display: { md: "none" } }}>
-						{isLogin ? (
-							<IconButton
-								color='inherit'
-								aria-label='logout'
-								onClick={handleLogout}>
-								<MenuIcon />
-							</IconButton>
-						) : (
-							<Button
-								variant='contained'
-								sx={{
-									py: 1.5,
-									fontSize: "1rem",
-									fontWeight: "bold",
-									bgcolor: "var(--primary-color)",
-									color: "var(--primary-contrast-text)",
-									"&:hover": { bgcolor: "var(--primary-color)" },
-									"&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" },
-								}}
-								component={Link}
-								to='/login'>
-								Sign In
-							</Button>
-						)}
-					</Box>
-				</Toolbar>
-			</AppBar>
-		);
-	};
-
-	return (
 		<Box>
-			<TopAppBar />
+			<CommonAppBar
+				navLinks={[]}
+				isLogin={isLogin}
+				handleLogout={handleLogout}
+				isLogouting={logouting}
+				isMenuOpen={isMenuOpen}
+				setIsMenuOpen={setIsMenuOpen}
+				setContactUsOpen={setContactUsOpen}
+				hideNavbarOnMobile={false}
+			/>
 				<BookingLayout title='Choose Your Vehicle'>
 					<>
 						<Box

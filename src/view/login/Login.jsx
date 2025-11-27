@@ -22,6 +22,7 @@ import { createDataServices } from "../../services/DataServices";
 import { useSnackbar } from "../../contexts/ErrorMessage";
 import VideoBackground1 from "../common/Background1";
 import { useUserRole } from "../../contexts/userRoleContext";
+import ConfirmDialog from "../../common/ConfirmDialog";
 
 const dataServices = createDataServices();
 
@@ -32,20 +33,56 @@ const Login = () => {
 	const [showPassword, setShowPassword] = useState(false);
 	const [rememberMe, setRememberMe] = useState(false);
 	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState("");
+	const [errors, setErrors] = useState({});
+	const [forgotDialogOpen, setForgotDialogOpen] = useState(false);
 	const navigate = useNavigate();
 	const { showSnackbar } = useSnackbar();
 	const { updateRole } = useUserRole();
 
+ 	const validateForm = () => {
+		const newErrors = {};
+		if (!email.trim()) newErrors.email = "Email is required";
+		else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = "Invalid email address";
+		if (!password.trim()) newErrors.password = "Password is required";
+		setErrors(newErrors);
+		return Object.keys(newErrors).length === 0;
+	};
+
+	const handleChange = (field) => (e) => {
+		const value = e.target.value;
+		if (field === 'email') setEmail(value);
+		if (field === 'password') setPassword(value);
+		if (errors[field]) {
+			setErrors((prev) => ({ ...prev, [field]: null }));
+		}
+	};
+
+	const handleForgotPassword = () => {
+		setForgotDialogOpen(true);
+	};
+
+	const handleForgotOk = () => {
+		setForgotDialogOpen(false);
+		navigate('/?contact=true');
+	};
+
+	const handleForgotCancel = () => {
+		setForgotDialogOpen(false);
+	};
+
 	const handleSubmit = async (e) => {
 		e.preventDefault();
+		if (!validateForm()) return;
 		setLoading(true);
-		setError("");
 		try {
 			const response = await dataServices.retrievePOST(
 				{ email, password },
 				API_ENDPOINTS.auth.login
 			);
+			if (!response.success) {
+				showSnackbar(response.message, "error");
+				return;
+			}
 			showSnackbar(response.message, "success");
 			AUTH_CONFIG.setToken(response.data.token, rememberMe);
 			AUTH_CONFIG.setUserData(response.data.user, rememberMe);
@@ -54,14 +91,14 @@ const Login = () => {
 			updateRole(response.data.user);
 
 			if (response.data.user.user_type_id === 3) {
-				navigate("/admin/user-management");
+				navigate("/admin/dashboard");
 			} else if (response.data.user.user_type_id === 2) {
 				navigate("/admin/task-management");
 			} else {
 				navigate("/");
 			}
 		} catch (err) {
-			setError(err.message || "An error occurred during login.");
+			showSnackbar(err.message || "An error occurred during login.", "error");
 		} finally {
 			setLoading(false);
 		}
@@ -132,15 +169,7 @@ const Login = () => {
 				</Typography>
 
 				<Box sx={{ mt: 3, width: "100%" }}>
-					{error && (
-						<Alert
-							severity='error'
-							sx={{
-								mb: 2,
-							}}>
-							{error}
-						</Alert>
-					)}
+
 					<TextField
 						margin='normal'
 						required
@@ -151,8 +180,9 @@ const Login = () => {
 						autoComplete='email'
 						autoFocus
 						value={email}
-						onChange={(e) => setEmail(e.target.value)}
-						error={!!error}
+						onChange={handleChange('email')}
+						error={!!errors.email}
+						helperText={errors.email}
 						sx={customTextFieldStyle}
 					/>
 					<TextField
@@ -165,8 +195,9 @@ const Login = () => {
 						id='password'
 						autoComplete='current-password'
 						value={password}
-						onChange={(e) => setPassword(e.target.value)}
-						error={!!error}
+						onChange={handleChange('password')}
+						error={!!errors.password}
+						helperText={errors.password}
 						sx={customTextFieldStyle}
 						InputProps={{
 							endAdornment: (
@@ -207,18 +238,16 @@ const Login = () => {
 								</Typography>
 							}
 						/>
-						<Link
-							to='/forgot-password'
-							style={{ textDecoration: "none" }}>
-							<Typography
-								variant='body2'
-								sx={{
-									color: "var(--primary-color)",
-									"&:hover": { textDecoration: "underline" },
-								}}>
-								Forgot password?
-							</Typography>
-						</Link>
+						<Typography
+							variant='body2'
+							sx={{
+								color: "var(--primary-color)",
+								cursor: "pointer",
+								"&:hover": { textDecoration: "underline" },
+							}}
+							onClick={handleForgotPassword}>
+							Forgot password?
+						</Typography>
 					</Stack>
 					<LoadingButton
 						type='submit'
@@ -240,6 +269,16 @@ const Login = () => {
 					</LoadingButton>
 				</Box>
 			</Paper>
+
+			<ConfirmDialog
+				open={forgotDialogOpen}
+				onClose={handleForgotCancel}
+				onConfirm={handleForgotOk}
+				title="Forgot Password"
+				message="If you forget your password, to reset your account password, contact the admin."
+				confirmText="OK"
+				cancelText="Cancel"
+			/>
 		</Box>
 	);
 };
@@ -248,10 +287,12 @@ const customTextFieldStyle = {
 	"& .MuiInputBase-input": { color: "var(--text-color)" },
 	"& .MuiInputLabel-root": { color: "var(--text-secondary-color)" },
 	"& .MuiInputLabel-root.Mui-focused": { color: "var(--primary-color)" },
+	"& .MuiFormHelperText-root": { color: "var(--error-color)" },
 	"& .MuiOutlinedInput-root": {
 		"& fieldset": { borderColor: "var(--divider-color)" },
 		"&:hover fieldset": { borderColor: "var(--primary-color)" },
 		"&.Mui-focused fieldset": { borderColor: "var(--primary-color)" },
+		"&.Mui-error fieldset": { borderColor: "var(--error-color)" },
 	},
 };
 

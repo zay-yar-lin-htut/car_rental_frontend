@@ -100,17 +100,22 @@ export const createDataServices = () => {
             });
             console.log("data", JSON.stringify(data));
 
-            if (!response.ok) {
-                const error = new Error();
-                error.response = { status: response.status };
-                throw error;
+            let responseData;
+            try {
+                responseData = await response.json();
+            } catch {
+                responseData = { message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
             }
 
-            return await response.json();
+            if (!response.ok) {
+                const errorMessage = responseData.message || ERROR_CONFIG.getErrorMessage({ response: { status: response.status } });
+                throw new Error(errorMessage);
+            }
+
+            return responseData;
         } catch (error) {
-            const errorMessage = ERROR_CONFIG.getErrorMessage(error);
-            console.error("Error in retrievePOST:", errorMessage);
-            throw new Error(errorMessage);
+            console.error("Error in retrievePOST:", error.message);
+            throw error;
         }
     };
 
@@ -140,8 +145,8 @@ export const createDataServices = () => {
     };
 
     const retrieveImage = (imageUrl) => {
-        return `${BaseUrl}${API_ENDPOINTS.image.proxy
-            }?url=${encodeURIComponent(imageUrl)}`
+        // Disabled proxy image API - return original URL directly
+        return imageUrl;
     };
 
     const retrievePOSTFormData = async (data, serviceName) => {

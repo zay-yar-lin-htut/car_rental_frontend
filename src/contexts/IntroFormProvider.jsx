@@ -9,9 +9,9 @@ export const IntroFormProvider = ({ children }) => {
 	const [isLoading, setIsLoading] = useState(false);
 
 	const [formValues, setFormValues] = useState({
-		pickupLocation: [],
+		pickupLocation: null,
 		dropSameAsPickup: true,
-		dropoffLocation: [],
+		dropoffLocation: null,
 		pickupDate: null,
 		pickupTime: null,
 		dropDate: null,
@@ -22,9 +22,9 @@ export const IntroFormProvider = ({ children }) => {
 
 	const resetForm = useCallback(() => {
 		setFormValues({
-			pickupLocation: [],
+			pickupLocation: null,
 			dropSameAsPickup: true,
-			dropoffLocation: [],
+			dropoffLocation: null,
 			pickupDate: null,
 			pickupTime: null,
 			dropDate: null,

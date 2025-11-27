@@ -1,4 +1,4 @@
- import React, { useState, useEffect, useMemo } from "react";
+ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
 	Box,
@@ -17,25 +17,17 @@ import {
 	CardMedia,
 	Chip,
 	Skeleton,
-	AppBar,
-	Toolbar,
-	useTheme,
-	useMediaQuery,
-	IconButton,
-	Drawer,
-	List,
-	ListItem,
-	ListItemText,
 	TextField,
 	Rating,
+	Pagination,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
 import { AUTH_CONFIG } from "../services/Configuration";
 import { getNavLinks } from "../view/home/Config/navigationConfig";
 import ContactUs from "../contactUs/ContactUs";
 import { createDataServices } from "../services/DataServices";
 import { API_ENDPOINTS } from "../services/Configuration";
 import { useSnackbar } from "../contexts/ErrorMessage";
+import CommonAppBar from "../view/common/AppBar";
 
 const History = () => {
 	const [bookings, setBookings] = useState([]);
@@ -46,7 +38,7 @@ const History = () => {
 	const [imageLoading, setImageLoading] = useState({});
 	const [addresses, setAddresses] = useState({});
 	const { showSnackbar } = useSnackbar();
-	const dataServices = createDataServices();
+	const dataServices = React.useMemo(() => createDataServices(), []);
 	const navigate = useNavigate();
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [isContactUsOpen, setContactUsOpen] = useState(false);
@@ -55,6 +47,9 @@ const History = () => {
 	const [reviewBooking, setReviewBooking] = useState(null);
 	const [rating, setRating] = useState(0);
 	const [comment, setComment] = useState('');
+	const [page, setPage] = useState(0);
+	const rowsPerPage = 10;
+	const [totalBookings, setTotalBookings] = useState(0);
 	const isLogin = AUTH_CONFIG.isAuthenticated();
 	const navLinks = useMemo(() => getNavLinks(isLogin), [isLogin]);
 
@@ -79,16 +74,17 @@ const History = () => {
 		}
 	};
 
-	const fetchBookings = async () => {
+	const fetchBookings = useCallback(async () => {
 		try {
 			const response = await dataServices.retrieve(
 				API_ENDPOINTS.users.base,
-				API_ENDPOINTS.users.myBookings
+				`${API_ENDPOINTS.users.myBookings}?first=${page + 1}&max=${rowsPerPage}`
 			);
-			setBookings(response.data || []);
+			setBookings(response.data.data || []);
+			setTotalBookings(response.data.total || 0);
 			// Fetch addresses for unique locations
 			const uniqueLocations = new Set();
-			response.data.forEach(booking => {
+			response.data.data.forEach(booking => {
 				if (booking.pickup_latitude && booking.pickup_longitude) uniqueLocations.add(`${booking.pickup_latitude},${booking.pickup_longitude}`);
 				if (booking.dropoff_latitude && booking.dropoff_longitude) uniqueLocations.add(`${booking.dropoff_latitude},${booking.dropoff_longitude}`);
 			});
@@ -101,17 +97,17 @@ const History = () => {
 					await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay between requests
 				}
 			}
-		} catch (err) {
-			setError(err.message || "Failed to load bookings");
+		} catch (_err) {
+			setError(_err.message || "Failed to load bookings");
 			showSnackbar("Error loading history", "error");
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [page, rowsPerPage, showSnackbar, dataServices]);
 
 	useEffect(() => {
 		fetchBookings();
-	}, []);
+	}, [fetchBookings]);
 
 	const handleCancelClick = (booking) => {
 		setSelectedBooking(booking);
@@ -137,7 +133,7 @@ const History = () => {
 						: b
 				)
 			);
-		} catch (err) {
+		} catch (_err) {
 			showSnackbar("Cancel failed", "error");
 		} finally {
 			handleDialogClose();
@@ -153,7 +149,7 @@ const History = () => {
 			showSnackbar("Review submitted successfully", "success");
 			setReviewDialogOpen(false);
 			fetchBookings(); // Re-fetch to update the list
-		} catch (err) {
+		} catch (_err) {
 			showSnackbar("Failed to submit review", "error");
 		}
 	};
@@ -193,218 +189,7 @@ const History = () => {
 		});
 	};
 
-	const TopAppBar = ({
-		navLinks,
-		isLogin,
-		handleLogout,
-		isLogouting,
-		setIsMenuOpen,
-		setContactUsOpen,
-		hideNavbarOnMobile,
-	}) => {
-		const theme = useTheme();
-		const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-		const [scrolled, setScrolled] = useState(false);
 
-		useEffect(() => {
-			const handleScroll = () => {
-				setScrolled(window.scrollY > 10);
-			};
-			window.addEventListener("scroll", handleScroll);
-			return () => window.removeEventListener("scroll", handleScroll);
-		}, []);
-
-		return (
-			<AppBar
-				position='fixed'
-				elevation={scrolled ? 4 : 0}
-				sx={{
-					py: 1,
-					zIndex: 100,
-					backgroundColor: "rgba(111, 111, 111, 0.9)" ,
-					color: "var(--text-color)",
-					px: { xs: 2, md: 4 },
-					backdropFilter: scrolled ? "blur(10px)" : "none",
-					transition:
-						"background-color 0.3s ease, box-shadow 0.3s ease, py 0.3s ease, transform 0.3s ease",
-					transform: isMobile && hideNavbarOnMobile ? "translateY(-100%)" : "translateY(0)",
-				}}>
-				<Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
-					<Typography
-						variant='h6'
-						component='div'
-						sx={{
-							fontWeight: "bold",
-							fontFamily: "'Orbitron', sans-serif",
-							fontSize: { xs: "0.9rem", sm: "1.2rem", md: "1.5rem" },
-						}}>
-						JOURNEY WHEEL
-					</Typography>
-					<Box
-						sx={{
-							flexGrow: 1,
-							display: { xs: "none", md: "flex" },
-							justifyContent: "center",
-							gap: 10,
-						}}>
-						{navLinks.map((link) =>
-							link.label === "Contact Us" ? (
-								<Typography
-									key={link.label}
-									onClick={() => setContactUsOpen(true)}
-									sx={{ cursor: "pointer", "&:hover": { color: "var(--text-color)" } }}>
-									{link.label}
-								</Typography>
-							) : (
-								<Link
-									key={link.label}
-									to={link.to}
-									style={{ textDecoration: "none" }}>
-									<Typography sx={{ "&:hover": { color: "var(--text-color)" } }}>
-										{link.label}
-									</Typography>
-								</Link>
-							)
-						)}
-					</Box>
-					<Box sx={{ display: { xs: "none", md: "block" } }}>
-						{isLogin ? (
-							<Button
-								variant='contained'
-								sx={{
-									py: 1.5,
-									fontSize: "1rem",
-									fontWeight: "bold",
-									bgcolor: "error.main",
-									color: "white",
-									"&:hover": { bgcolor: "error.dark" },
-									"&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" },
-								}}
-								onClick={handleLogout}>
-								{isLogouting ? "Logging Out..." : "Sign Out"}
-							</Button>
-						) : (
-							<Button
-								variant='contained'
-								sx={{
-									py: 1.5,
-									fontSize: "1rem",
-									fontWeight: "bold",
-									bgcolor: "var(--primary-color)",
-									color: "var(--primary-contrast-text)",
-									"&:hover": { bgcolor: "var(--primary-color)" },
-									"&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" },
-								}}
-								component={Link}
-								to='/login'>
-								Sign In
-							</Button>
-						)}
-					</Box>
-					<Box sx={{ display: { md: "none" } }}>
-						{isLogin ? (
-							<IconButton
-								color='inherit'
-								aria-label='open drawer'
-								edge='start'
-								onClick={() => setIsMenuOpen(true)}
-								sx={{ mr: 2 }}>
-								<MenuIcon />
-							</IconButton>
-						) : (
-							<Button
-								variant='contained'
-								sx={{
-									py: 1.5,
-									fontSize: "1rem",
-									fontWeight: "bold",
-									bgcolor: "var(--primary-color)",
-									color: "var(--primary-contrast-text)",
-									"&:hover": { bgcolor: "var(--primary-color)" },
-									"&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" },
-								}}
-								component={Link}
-								to='/login'>
-								Sign In
-							</Button>
-						)}
-					</Box>
-				</Toolbar>
-			</AppBar>
-		);
-	};
-
-	const MobileDrawer = ({
-		navLinks,
-		isMenuOpen,
-		onMenuClose,
-		isLogin,
-		handleLogout,
-		isLogouting,
-		setContactUsOpen,
-	}) => (
-		<Drawer
-			anchor='top'
-			open={isMenuOpen}
-			onClose={onMenuClose}
-			PaperProps={{
-				sx: {
-					backgroundColor: "white",
-					width: "100%",
-					height: "auto",
-					top: "60px",
-				},
-			}}>
-			<Box
-				sx={{
-					width: "100%",
-				}}
-				role='presentation'
-				onClick={onMenuClose}
-				onKeyDown={onMenuClose}>
-				<List>
-					{navLinks.map((link) => (
-						<React.Fragment key={link.label}>
-							<ListItem
-								button
-								component={link.label === "Contact Us" ? "button" : Link}
-								to={link.to}
-								onClick={
-									link.label === "Contact Us"
-										? () => setContactUsOpen(true)
-										: null
-								}>
-								<ListItemText
-									primary={link.label}
-									sx={{ color: "var(--text-color)" }}
-								/>
-							</ListItem>
-							<Divider sx={{ my: 0.3 }} />
-						</React.Fragment>
-					))}
-					{isLogin && (
-						<ListItem>
-							<Button
-								variant='contained'
-								sx={{
-									py: 1.5,
-									fontSize: "1rem",
-									fontWeight: "bold",
-									bgcolor: "error.main",
-									color: "white",
-									"&:hover": { bgcolor: "error.dark" },
-									"&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" },
-									width: "100%",
-								}}
-								onClick={handleLogout}>
-								{isLogouting ? "Logging Out..." : "Sign Out"}
-							</Button>
-						</ListItem>
-					)}
-				</List>
-			</Box>
-		</Drawer>
-	);
 
 	const renderActionButtons = (booking) => {
 		switch (booking.booking_status) {
@@ -420,7 +205,7 @@ const History = () => {
 					</Button>
 				);
 			case "completed":
-				return booking.review_id ? null : (
+				return booking.has_reviewed ? null : (
 					<Button
 						size='small'
 						variant='contained'
@@ -434,14 +219,15 @@ const History = () => {
 		}
 	};
 
-  if (loading) {
+   if (loading) {
 		return (
 			<Box>
-				<TopAppBar
+				<CommonAppBar
 					navLinks={navLinks}
 					isLogin={isLogin}
 					handleLogout={handleLogout}
 					isLogouting={logouting}
+					isMenuOpen={isMenuOpen}
 					setIsMenuOpen={setIsMenuOpen}
 					setContactUsOpen={setContactUsOpen}
 					hideNavbarOnMobile={false}
@@ -464,11 +250,12 @@ const History = () => {
 	if (error) {
 		return (
 			<Box>
-				<TopAppBar
+				<CommonAppBar
 					navLinks={navLinks}
 					isLogin={isLogin}
 					handleLogout={handleLogout}
 					isLogouting={logouting}
+					isMenuOpen={isMenuOpen}
 					setIsMenuOpen={setIsMenuOpen}
 					setContactUsOpen={setContactUsOpen}
 					hideNavbarOnMobile={false}
@@ -487,24 +274,16 @@ const History = () => {
 
 	return (
 		<Box>
-			<TopAppBar
-				navLinks={navLinks}
-				isLogin={isLogin}
-				handleLogout={handleLogout}
-				isLogouting={logouting}
-				setIsMenuOpen={setIsMenuOpen}
-				setContactUsOpen={setContactUsOpen}
-				hideNavbarOnMobile={false}
-			/>
-			<MobileDrawer
-				navLinks={navLinks}
-				isMenuOpen={isMenuOpen}
-				onMenuClose={() => setIsMenuOpen(false)}
-				isLogin={isLogin}
-				handleLogout={handleLogout}
-				isLogouting={logouting}
-				setContactUsOpen={setContactUsOpen}
-			/>
+				<CommonAppBar
+					navLinks={navLinks}
+					isLogin={isLogin}
+					handleLogout={handleLogout}
+					isLogouting={logouting}
+					isMenuOpen={isMenuOpen}
+					setIsMenuOpen={setIsMenuOpen}
+					setContactUsOpen={setContactUsOpen}
+					hideNavbarOnMobile={false}
+				/>
 			<Box
 				sx={{ minHeight: "100vh", bgcolor: "var(--background-color)", pt: { xs: 28, md: 30 }, py: { xs: 2.5, md: 3.5 } }}>
 			<Container maxWidth='lg'>
@@ -551,10 +330,6 @@ const History = () => {
 											borderRadius: 2,
 											overflow: "hidden",
 											bgcolor: "var(--divider-color)",
-											border:
-												booking.booking_status === "pending"
-													? "2px solid var(--primary-color)"
-													: "1px solid var(--divider-color)",
 										}}>
 										{booking.car_image_url ? (
 											<>
@@ -706,10 +481,10 @@ const History = () => {
 												variant='h6'
 												sx={{
 													fontWeight: 700,
-													color: "var(--success-color)",
+													color: "var(--primary-color)",
 													fontSize: "1.25rem",
 												}}>
-												${booking.total_amount}
+												{booking.total_amount} MMK
 											</Typography>
 											<Box>{renderActionButtons(booking)}</Box>
 										</Box>
@@ -717,6 +492,17 @@ const History = () => {
 								</Box>
 							</Card>
 						))}
+					</Box>
+				)}
+				{totalBookings > rowsPerPage && (
+					<Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+						<Pagination
+							count={Math.ceil(totalBookings / rowsPerPage)}
+							page={page + 1}
+							onChange={(event, value) => setPage(value - 1)}
+							color="primary"
+							sx={{ '& .MuiPaginationItem-root': { color: 'var(--text-color)' } }}
+						/>
 					</Box>
 				)}
 			</Container>

@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect, useState } from "react";
 import { useIntroForm } from "../../contexts/IntroFormProvider";
 import { useSnackbar } from "../../contexts/ErrorMessage";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import {
 	Box,
@@ -12,191 +12,123 @@ import {
 	Card,
 	CardMedia,
 	CardContent,
-	Skeleton,
 	CircularProgress,
+	Stack,
+	Alert,
 	useTheme,
-	Dialog,
-	DialogActions,
-	DialogContent,
-	DialogTitle,
-	AppBar,
-	Toolbar,
-	useMediaQuery,
-	IconButton,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
 import { createDataServices } from "../../services/DataServices";
 import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
 import BookingLayout from "./BookingLayout";
 import { calculateRentalCost } from "./costCalculator";
-
+import CommonAppBar from "../common/AppBar";
+import {
+	LocationOn,
+	Schedule,
+	DriveEta,
+	AttachMoney,
+	Event,
+	ArrowBack,
+} from "@mui/icons-material";
 
 const Review = ({ onBackToSelect }) => {
 	const { formValues, resetForm } = useIntroForm();
 	const theme = useTheme();
 	const { showSnackbar } = useSnackbar();
 	const [isConfirming, setIsConfirming] = useState(false);
+
 	const navigate = useNavigate();
 	const dataServices = useMemo(() => createDataServices(), []);
-	const [fineDetails, setFineDetails] = useState(null);
 
-	const TopAppBar = () => {
-		const theme = useTheme();
-		const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-		const [scrolled, setScrolled] = useState(false);
+	// AppBar state
+	const [isMenuOpen, setIsMenuOpen] = useState(false);
+	const [isContactUsOpen, setContactUsOpen] = useState(false);
+	const [logouting, setLogouting] = useState(false);
+	const isLogin = AUTH_CONFIG.isAuthenticated();
 
-		useEffect(() => {
-			const handleScroll = () => {
-				setScrolled(window.scrollY > 10);
-			};
-			window.addEventListener("scroll", handleScroll);
-			return () => window.removeEventListener("scroll", handleScroll);
-		}, []);
-
-		const handleLogout = () => {
-			AUTH_CONFIG.clearToken();
-			AUTH_CONFIG.clearUserData();
-			navigate("/");
-		};
-
-		const isLogin = AUTH_CONFIG.isAuthenticated();
-
-		return (
-			<AppBar
-				position='fixed'
-				elevation={scrolled ? 4 : 0}
-				sx={{
-					py: 1,
-					zIndex: 100,
-					backgroundColor: "rgba(111, 111, 111, 0.9)",
-					color: "var(--text-color)",
-					px: { xs: 2, md: 4 },
-					backdropFilter: scrolled ? "blur(10px)" : "none",
-					transition:
-						"background-color 0.3s ease, box-shadow 0.3s ease, py 0.3s ease, transform 0.3s ease",
-				}}>
-				<Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
-					<Typography
-						variant='h6'
-						component='div'
-						sx={{
-							fontWeight: "bold",
-							fontFamily: "'Orbitron', sans-serif",
-							fontSize: { xs: "0.9rem", sm: "1.2rem", md: "1.5rem" },
-						}}>
-						JOURNEY WHEEL
-					</Typography>
-					<Box sx={{ display: { xs: "none", md: "block" } }}>
-						<Button
-							variant='contained'
-							sx={{
-								py: 1.5,
-								fontSize: "1rem",
-								fontWeight: "bold",
-								bgcolor: "error.main",
-								color: "white",
-								"&:hover": { bgcolor: "error.dark" },
-								"&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" },
-							}}
-							onClick={handleLogout}>
-							Sign Out
-						</Button>
-					</Box>
-					<Box sx={{ display: { md: "none" } }}>
-						{isLogin ? (
-							<IconButton
-								color='inherit'
-								aria-label='logout'
-								onClick={handleLogout}>
-								<MenuIcon />
-							</IconButton>
-						) : (
-							<Button
-								variant='contained'
-								sx={{
-									py: 1.5,
-									fontSize: "1rem",
-									fontWeight: "bold",
-									bgcolor: "var(--primary-color)",
-									color: "var(--primary-contrast-text)",
-									"&:hover": { bgcolor: "var(--primary-color)" },
-									"&.Mui-disabled": { bgcolor: "rgba(0, 0, 0, 0.12)" },
-								}}
-								component={Link}
-								to='/login'>
-								Sign In
-							</Button>
-						)}
-					</Box>
-				</Toolbar>
-			</AppBar>
-		);
+	const handleLogout = () => {
+		setLogouting(true);
+		AUTH_CONFIG.clearToken();
+		AUTH_CONFIG.clearUserData();
+		setTimeout(() => navigate("/"), 800);
 	};
 
-
-
-	// Redirect if essential data is missing
+	// Redirect if form is incomplete
 	useEffect(() => {
 		if (
 			!formValues.pickupDate ||
 			!formValues.dropDate ||
-			!formValues.vehicleType
+			!formValues.vehicleType ||
+			!formValues.pickupLocation
 		) {
-			showSnackbar("Your session is incomplete. Please start over.", "warning");
+			showSnackbar("Booking session expired. Please start again.", "warning");
 			navigate("/");
 		}
 	}, [formValues, navigate, showSnackbar]);
-	console.log("FormValue", formValues);
+
+
+
+	// Calculate cost
+	const costDetails = useMemo(() => {
+		return calculateRentalCost(formValues, formValues.vehicleType);
+	}, [formValues]);
+
+	const formatDate = (date) => (date ? dayjs(date).format("MMM DD, YYYY") : "—");
+	const formatTime = (time) => (time ? dayjs(time).format("hh:mm A") : "—");
 
 	const handleConfirmBooking = async () => {
 		const getCoords = (location) => {
 			if (!location) return [null, null];
-			return location.location || location.position || [null, null];
+			const coords = location.location || location.position || location.latlng;
+			return Array.isArray(coords) ? coords : [null, null];
 		};
 
 		const pickupCoords = getCoords(formValues.pickupLocation);
-		const dropoffCoords = getCoords(formValues.dropoffLocation);
+		const dropoffCoords = formValues.dropSameAsPickup
+			? pickupCoords
+			: getCoords(formValues.dropoffLocation);
 
-		if (!pickupCoords || !Array.isArray(pickupCoords) || pickupCoords.length < 2 || !pickupCoords[0] || !pickupCoords[1] ||
-			(!formValues.dropSameAsPickup && (!dropoffCoords || !Array.isArray(dropoffCoords) || dropoffCoords.length < 2 || !dropoffCoords[0] || !dropoffCoords[1]))) {
-			showSnackbar(
-				"Invalid location data. Please select locations again.",
-				"error"
-			);
+		if (!pickupCoords[0] || !pickupCoords[1]) {
+			showSnackbar("Invalid pickup location. Please select again.", "error");
+			return;
+		}
+
+		if (!formValues.dropSameAsPickup && (!dropoffCoords[0] || !dropoffCoords[1])) {
+			showSnackbar("Invalid dropoff location. Please select again.", "error");
 			return;
 		}
 
 		setIsConfirming(true);
-		try {
-		const bookingData = {
-			car_id: formValues.vehicleType.car_id,
-			pickup_date: dayjs(formValues.pickupDate).format("YYYY-MM-DD"),
-			pickup_time: dayjs(formValues.pickupTime).format("HH:mm:ss"),
-			dropoff_date: dayjs(formValues.dropDate).format("YYYY-MM-DD"),
-			dropoff_time: dayjs(formValues.dropTime).format("HH:mm:ss"),
-			pickup_latitude: pickupCoords[0],
-			pickup_longitude: pickupCoords[1],
-			dropoff_latitude: formValues.dropSameAsPickup ? pickupCoords[0] : dropoffCoords[0],
-			dropoff_longitude: formValues.dropSameAsPickup ? pickupCoords[1] : dropoffCoords[1],
-			total_amount: costDetails.totalCost,
-		};
 
-			// Assuming you have a 'bookings' endpoint configured
+		try {
+			const bookingData = {
+				car_id: formValues.vehicleType.car_id,
+				pickup_date: dayjs(formValues.pickupDate).format("YYYY-MM-DD"),
+				pickup_time: dayjs(formValues.pickupTime).format("HH:mm:ss"),
+				dropoff_date: dayjs(formValues.dropDate).format("YYYY-MM-DD"),
+				dropoff_time: dayjs(formValues.dropTime).format("HH:mm:ss"),
+				pickup_latitude: pickupCoords[0],
+				pickup_longitude: pickupCoords[1],
+				dropoff_latitude: dropoffCoords[0],
+				dropoff_longitude: dropoffCoords[1],
+				total_amount: costDetails?.totalCost || 0,
+			};
+
 			const response = await dataServices.retrievePOST(
 				bookingData,
 				API_ENDPOINTS.bookings.create
 			);
 
-			if (!response.success) {
-				showSnackbar(response.message, "error");
-			} else {
-				showSnackbar(response.message, "success");
+			if (response.success) {
+				showSnackbar("Booking confirmed successfully!", "success");
 				resetForm();
 				navigate("/");
+			} else {
+				showSnackbar(response.message || "Failed to create booking.", "error");
 			}
 		} catch (error) {
 			showSnackbar(
-				error.message || "An error occurred while confirming the booking.",
+				error.message || "Something went wrong. Please try again.",
 				"error"
 			);
 		} finally {
@@ -204,224 +136,206 @@ const Review = ({ onBackToSelect }) => {
 		}
 	};
 
-	const formatDate = (date) => (date ? dayjs(date).format("MM/DD/YYYY") : "");
-	const formatTime = (time) => (time ? dayjs(time).format("hh:mm A") : "");
-
-	const costDetails = useMemo(() => {
-		return calculateRentalCost(formValues, formValues.vehicleType);
-	}, [formValues, formValues.vehicleType]);
-
-
-
-	useEffect(() => {
-		const checkIsHaveFine = async () => {
-			try {
-				const response = await dataServices().retrieve(
-					API_ENDPOINTS.users.base,
-					API_ENDPOINTS.users.isHaveFine
-				);
-
-				if (response.data.have_fine && response.data.data["Total Fine"] > 0) {
-					setFineDetails(response.data.data);
-				}
-			} catch (err) {
-				// Fail silently if user is not logged in or there's an error.
-				// showSnackbar("Could not fetch fines status.", "error");
-			}
-		};
-		checkIsHaveFine();
-	}, []);
-
 	return (
 		<Box>
-			<TopAppBar />
-			<BookingLayout title='Review Your Booking'>
-				<Box
-					sx={{
-						p: 3,
-					}}>
-				{/*  Row: Rental Details and Cost Summary (Full Width) */}
-				<Box sx={{ width: "100%" }}>
-					{/* Rental Details */}
-					<Paper
-						variant='outlined'
-						sx={{ p: 3, mb: 3, bgcolor: "background.paper" }}>
-						<Typography
-							variant='h6'
-							fontWeight='bold'
-							gutterBottom>
-							Rental Details
-						</Typography>
-						<Box sx={{ mb: 2 }}>
-							<Typography
-								variant='body1'
-								fontWeight='medium'
-								color='text.secondary'>
-								Dates & Times
-							</Typography>
-							<Typography variant='body1'>
-								{`${formatDate(formValues.pickupDate)} @ ${formatTime(
-									formValues.pickupTime
-								)} — ${formatDate(formValues.dropDate)} @ ${formatTime(
-									formValues.dropTime
-								)}`}
+			<CommonAppBar
+				navLinks={[]}
+				isLogin={isLogin}
+				handleLogout={handleLogout}
+				isLogouting={logouting}
+				isMenuOpen={isMenuOpen}
+				setIsMenuOpen={setIsMenuOpen}
+				setContactUsOpen={setContactUsOpen}
+				hideNavbarOnMobile={false}
+			/>
+
+			<BookingLayout title="Review Your Booking">
+				<Stack spacing={4} sx={{ maxWidth: 800, mx: "auto" }}>
+
+
+					{/* 1. Pickup & Dropoff */}
+					<Paper elevation={3} sx={{ p: { xs: 3, md: 4 }, borderRadius: 3 }}>
+						<Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+							<Event color="primary" sx={{ mr: 1 }} />
+							<Typography variant="h6" fontWeight="bold" color="primary">
+								Pickup & Dropoff Details
 							</Typography>
 						</Box>
-						<Divider sx={{ my: 2 }} />
-						<Box>
-							<Typography
-								variant='body1'
-								fontWeight='medium'
-								color='text.secondary'>
-								Pick-up & Return Location
-							</Typography>
-							<Typography variant='body1'>
-								<strong>From:</strong> {formValues.pickupLocation?.name}
-								<br />
-								<strong>To:</strong>{" "}
-								{formValues.dropSameAsPickup
-									? formValues.pickupLocation?.name
-									: formValues.dropoffLocation?.name}
-							</Typography>
-						</Box>
+						<Divider sx={{ mb: 3 }} />
+
+						<Stack spacing={3}>
+							<Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+								<Schedule color="action" sx={{ mr: 2, mt: 0.5 }} />
+								<Box>
+									<Typography color="text.secondary" fontWeight="medium">
+										Pickup
+									</Typography>
+									<Typography>
+										<strong>{formatDate(formValues.pickupDate)}</strong> at{" "}
+										<strong>{formatTime(formValues.pickupTime)}</strong>
+									</Typography>
+									<Typography variant="body2" color="text.secondary" mt={0.5}>
+										{formValues.pickupLocation?.name || "Not selected"}
+									</Typography>
+								</Box>
+							</Box>
+
+							<Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+								<Schedule color="action" sx={{ mr: 2, mt: 0.5 }} />
+								<Box>
+									<Typography color="text.secondary" fontWeight="medium">
+										Dropoff
+									</Typography>
+									<Typography>
+										<strong>{formatDate(formValues.dropDate)}</strong> at{" "}
+										<strong>{formatTime(formValues.dropTime)}</strong>
+									</Typography>
+									<Typography variant="body2" color="text.secondary" mt={0.5}>
+										{formValues.dropSameAsPickup
+											? "Same as pickup"
+											: formValues.dropoffLocation?.name || "Not selected"}
+									</Typography>
+								</Box>
+							</Box>
+						</Stack>
 					</Paper>
-				</Box>
 
-				{/* Vehicle Details */}
-				<Paper
-					variant='outlined'
-					sx={{ p: 3, mb: 3, bgcolor: "background.paper" }}>
-					<Box
-						sx={{
-							display: "flex",
-							justifyContent: "space-between",
-							alignItems: "center",
-						}}>
-						<Typography
-							variant='h6'
-							fontWeight='bold'
-							gutterBottom>
-							Vehicle Details
-						</Typography>
-					</Box>
-					<Card
-						variant='outlined'
-						sx={{ border: `1px solid ${theme.palette.divider}` }}>
-						<CardMedia
-							component='img'
-							image={dataServices.retrieveImage(
-								formValues.vehicleType.car_type_image_url
-							)}
-							sx={{
-								height: 240,
-								objectFit: "contain",
-								p: 1,
-								borderRadius: 2,
-							}}
-							alt={formValues.vehicleType.type_name}
-						/>
-						<CardContent>
-							<Typography
-								variant='h6'
-								fontWeight='bold'>
-								{formValues.vehicleType.type_name}
+					{/* 2. Vehicle */}
+					<Paper elevation={3} sx={{ p: { xs: 3, md: 4 }, borderRadius: 3 }}>
+						<Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+							<DriveEta color="primary" sx={{ mr: 1 }} />
+							<Typography variant="h6" fontWeight="bold" color="primary">
+								Selected Vehicle
 							</Typography>
-							<Typography
-								variant='body1'
-								color='text.secondary'>
-								{formValues.vehicleType.description}
-							</Typography>
-						</CardContent>
-					</Card>
-				</Paper>
+						</Box>
+						<Divider sx={{ mb: 3 }} />
 
-				<Box sx={{ width: "100%" }}>
-					{/* Cost Summary */}
-					<Paper
-						variant='outlined'
-						sx={{ p: 3, mb: 3, bgcolor: "background.paper" }}>
-						<Typography
-							variant='h6'
-							fontWeight='bold'
-							gutterBottom>
-							Cost Summary
-						</Typography>
-						{costDetails && (
-							<Box>
-								<Typography
-									variant='body1'
-									color='text.secondary'>
-									{costDetails.calculationText}
+						<Card variant="outlined" sx={{ borderRadius: 3, overflow: "hidden" }}>
+							<CardMedia
+								component="img"
+								image={formValues.vehicleType.car_image_url}
+								alt={formValues.vehicleType.model || formValues.vehicleType.type_name}
+								sx={{
+									height: { xs: 200, md: 280 },
+									objectFit: "contain",
+									bgcolor: "grey.100",
+								}}
+							/>
+							<CardContent>
+								<Typography variant="h5" fontWeight="bold" gutterBottom>
+									{formValues.vehicleType.model || formValues.vehicleType.type_name}
 								</Typography>
-								<Typography
-									variant='h5'
-									fontWeight='bold'
-									sx={{ my: 1 }}>
-									Total: {costDetails.totalCost.toFixed(2)} USD
+								<Typography variant="subtitle1" color="primary" sx={{ mb: 1 }}>
+									{formValues.vehicleType.car_type}
+								</Typography>
+								<Typography color="text.secondary" paragraph>
+									{formValues.vehicleType.description}
+								</Typography>
+
+								<Stack spacing={1.5} mt={2}>
+									<Typography>
+										<strong>License Plate:</strong> {formValues.vehicleType.license_plate}
+									</Typography>
+									<Typography>
+										<strong>Hourly Rate:</strong> {formValues.vehicleType.price_per_hour} MMK
+									</Typography>
+									<Typography>
+										<strong>Daily Rate:</strong> {formValues.vehicleType.price_per_day} MMK
+									</Typography>
+									<Typography>
+										<strong>Seats:</strong> {formValues.vehicleType.number_of_seats} ·{" "}
+										<strong>Luggage:</strong> {formValues.vehicleType.luggage_capacity} bags
+									</Typography>
+									<Typography>
+										<strong>Transmission:</strong> {formValues.vehicleType.transmission} ·{" "}
+										<strong>Fuel:</strong> {formValues.vehicleType.fuel_type}
+									</Typography>
+								</Stack>
+							</CardContent>
+						</Card>
+					</Paper>
+
+					{/* 3. Cost Summary */}
+					<Paper elevation={3} sx={{ p: { xs: 3, md: 4 }, borderRadius: 3 }}>
+						<Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+							<AttachMoney color="primary" sx={{ mr: 1 }} />
+							<Typography variant="h6" fontWeight="bold" color="primary">
+								Cost Summary
+							</Typography>
+						</Box>
+						<Divider sx={{ mb: 3 }} />
+
+						<Stack spacing={2}>
+							<Box>
+								<Typography fontWeight="medium" mb={1}>Rental Calculation</Typography>
+								<Typography variant="body2" color="text.secondary">
+									{costDetails?.calculationText || "Calculating..."}
+								</Typography>
+								<Box display="flex" justifyContent="space-between" mt={1}>
+									<Typography>Rental Cost</Typography>
+									<Typography fontWeight="medium">
+										{(costDetails?.rentalCost || 0).toFixed(2)} MMK
+									</Typography>
+								</Box>
+							</Box>
+
+							{(costDetails?.deliveryFee || 0) > 0 && (
+								<Box display="flex" justifyContent="space-between">
+									<Typography>Delivery Fee</Typography>
+									<Typography>
+										+{costDetails.deliveryFee.toFixed(2)} MMK
+									</Typography>
+								</Box>
+							)}
+
+							{(costDetails?.takebackFee || 0) > 0 && (
+								<Box display="flex" justifyContent="space-between">
+									<Typography>Takeback Fee</Typography>
+									<Typography>
+										+{costDetails.takebackFee.toFixed(2)} MMK
+									</Typography>
+								</Box>
+							)}
+
+
+
+							<Divider />
+
+							<Box display="flex" justifyContent="space-between">
+								<Typography variant="h5" fontWeight="bold">
+									Total Amount
+								</Typography>
+								<Typography variant="h5" fontWeight="bold" color="primary">
+									{(costDetails?.totalCost || 0).toFixed(2)} MMK
 								</Typography>
 							</Box>
-						)}
+						</Stack>
 					</Paper>
-				</Box>
 
-				{fineDetails && (
-					<Paper
-						variant='outlined'
-						sx={{ p: 3, mb: 3, borderColor: "error.main" }}>
-						<Typography
-							variant='h6'
-							fontWeight='bold'
-							color='error'
-							gutterBottom>
-							Outstanding Fines
-						</Typography>
-						<Typography color='error'>
-							You have outstanding fines that must be paid before you can make a
-							new booking.
-						</Typography>
-						<Box sx={{ mt: 2 }}>
-							<Typography color='error'>
-								No-show Fine: {fineDetails["No-show Fine"] || 0} USD
-							</Typography>
-							<Typography color='error'>
-								Cancellation Fine: {fineDetails["Cancellation Fine"] || 0} USD
-							</Typography>
-							<Typography
-								fontWeight='bold'
-								mt={1}
-								color='error'>
-								Total Fine: {fineDetails["Total Fine"]} USD
-							</Typography>
-						</Box>
-						{/* <Button
-							variant='contained'
-							color='error'
-							onClick={() => navigate("/profile")}
-							sx={{ mt: 2 }}>
-							Pay Now
-						</Button> */}
-					</Paper>
-				)}
-				<Box sx={{ mt: 4, display: "flex", justifyContent: "flex-end" }}>
-					<Button
-						variant='contained'
-						color='primary'
-						size='large'
-						disabled={isConfirming || fineDetails}
-						onClick={handleConfirmBooking}
-						sx={{ minWidth: 180 }}>
-						{isConfirming ? (
-							<CircularProgress
-								size={24}
-								color='inherit'
-							/>
-						) : (
-							"Confirm Booking"
-						)}
-					</Button>
-				</Box>
-			</Box>
-		</BookingLayout>
+					{/* Action Buttons */}
+					<Box display="flex" gap={2} justifyContent="flex-end" flexWrap="wrap">
+						<Button
+							variant="contained"
+							size="large"
+							color="primary"
+							onClick={handleConfirmBooking}
+							disabled={isConfirming}
+							sx={{
+								minWidth: 200,
+								py: 1.5,
+								fontSize: "1.1rem",
+								fontWeight: "bold",
+							}}
+						>
+							{isConfirming ? (
+								<CircularProgress size={28} color="inherit" />
+							) : (
+								"Confirm"
+							)}
+						</Button>
+					</Box>
+				</Stack>
+			</BookingLayout>
 		</Box>
 	);
 };

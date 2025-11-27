@@ -50,6 +50,7 @@ const CarManagement = () => {
 	const [availabilityFilter, setAvailabilityFilter] = useState("All");
 	const [fuelTypeFilter, setFuelTypeFilter] = useState("All");
 	const [carTypeFilter, setCarTypeFilter] = useState("All");
+	const [officeLocationFilter, setOfficeLocationFilter] = useState("All");
 	const [sort, setSort] = useState({ by: "price_per_day", order: "desc" });
 	const [openManageCarDialog, setOpenManageCarDialog] = useState(false);
 
@@ -60,6 +61,7 @@ const CarManagement = () => {
 	const [carTypes, setCarTypes] = useState([]);
 	const [editingCar, setEditingCar] = useState(null); // State to hold the car being edited
 	const [confirmDialog, setConfirmDialog] = useState({ open: false, car: null });
+	const [errors, setErrors] = useState({});
 	const [carFormData, setCarFormData] = useState({
 		model: "",
 		color: "",
@@ -112,6 +114,7 @@ const CarManagement = () => {
 			if (carTypeFilter !== "All") params.append('car_type_id', carTypeFilter);
 			if (fuelTypeFilter !== "All") params.append('fuel_type', fuelTypeFilter);
 			if (availabilityFilter !== "All") params.append('availability', (availabilityFilter === "Available").toString());
+			if (officeLocationFilter !== "All") params.append('office_location_id', officeLocationFilter);
 
 			// Add sorting parameter
 			if (sort.by === 'price_per_day') {
@@ -138,7 +141,7 @@ const CarManagement = () => {
 
 	useEffect(() => {
 		fetchCars();
-	}, [page, rowsPerPage, debouncedSearchTerm, availabilityFilter, fuelTypeFilter, carTypeFilter, sort]);
+	}, [page, rowsPerPage, debouncedSearchTerm, availabilityFilter, fuelTypeFilter, carTypeFilter, officeLocationFilter, sort]);
 
 	const handleAvailabilityFilterChange = (event) => {
 		setPage(0);
@@ -172,6 +175,7 @@ const CarManagement = () => {
 			...carFormData,
 			[name]: type === "checkbox" ? checked : value,
 		});
+		setErrors(prev => ({ ...prev, [name]: '' }));
 	};
 
 	const handleFileChange = (event) => {
@@ -183,12 +187,14 @@ const CarManagement = () => {
 				setImagePreview(reader.result);
 			};
 			reader.readAsDataURL(file);
+			setErrors(prev => ({ ...prev, image: '' }));
 		}
 	};
 
 	const handleOpenAddDialog = () => {
 		setOpenManageCarDialog(true);
 		setEditingCar(null);
+		setErrors({});
 		setCarFormData({
 			model: "",
 			color: "",
@@ -207,8 +213,8 @@ const CarManagement = () => {
 		setSelectedFile(null);
 	};
 
-	const handleFormSubmit = () => {
-		// Validation
+	const validateForm = () => {
+		const newErrors = {};
 		const requiredFields = [
 			'model', 'color', 'license_plate', 'price_per_hour', 'price_per_day',
 			'number_of_seats', 'luggage_capacity', 'fuel_type', 'car_type_id',
@@ -216,14 +222,30 @@ const CarManagement = () => {
 		];
 		for (const field of requiredFields) {
 			if (!carFormData[field] || carFormData[field] === "") {
-				showSnackbar(`Please fill the ${field.replace('_', ' ')} field.`, "error");
-				return;
+				newErrors[field] = `${field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} is required`;
 			}
 		}
-		if (!editingCar && !selectedFile && !imagePreview) {
-			showSnackbar("Please upload a car image.", "error");
-			return;
+		if (carFormData.price_per_hour && parseFloat(carFormData.price_per_hour) <= 0) {
+			newErrors.price_per_hour = "Price per hour must be greater than 0";
 		}
+		if (carFormData.price_per_day && parseFloat(carFormData.price_per_day) <= 0) {
+			newErrors.price_per_day = "Price per day must be greater than 0";
+		}
+		if (carFormData.number_of_seats && parseInt(carFormData.number_of_seats) <= 0) {
+			newErrors.number_of_seats = "Number of seats must be greater than 0";
+		}
+		if (carFormData.luggage_capacity && parseInt(carFormData.luggage_capacity) < 0) {
+			newErrors.luggage_capacity = "Luggage capacity must be 0 or greater";
+		}
+		if (!editingCar && !selectedFile && !imagePreview) {
+			newErrors.image = "Please upload a car image";
+		}
+		setErrors(newErrors);
+		return Object.keys(newErrors).length === 0;
+	};
+
+	const handleFormSubmit = () => {
+		if (!validateForm()) return;
 
 		setIsSubmitting(true);
 		const formData = new FormData();
@@ -267,6 +289,8 @@ const CarManagement = () => {
 
 	const handleEdit = (car) => {
 		const carType = carTypes.find(type => type.type_name === car.car_type);
+		setEditingCar(car);
+		setErrors({});
 		setCarFormData({
 			...car,
 			license_plate: car.license_plate,
@@ -343,7 +367,7 @@ const CarManagement = () => {
 				},
 				render: (car) =>
 					car.price_per_day != null
-						? `$${Number(car.price_per_day).toFixed(2)}`
+						? `${Number(car.price_per_day).toFixed(2)} MMK`
 						: "-",
 			},
 			{
@@ -355,7 +379,7 @@ const CarManagement = () => {
 				},
 				render: (car) =>
 					car.price_per_hour != null
-						? `$${Number(car.price_per_hour).toFixed(2)}`
+						? `${Number(car.price_per_hour).toFixed(2)} MMK`
 						: "-",
 			},
 			{
@@ -541,6 +565,25 @@ const CarManagement = () => {
 				<FormControl
 					variant='outlined'
 					sx={{ minWidth: 120 }}>
+					<InputLabel>Office Location</InputLabel>
+					<Select
+						value={officeLocationFilter}
+						onChange={(e) => setOfficeLocationFilter(e.target.value)}
+						label='Office Location'
+						sx={{
+							color: "var(--text-color)",
+						}}>
+						<MenuItem value='All'>All</MenuItem>
+						{officeLocations.map((location) => (
+							<MenuItem key={location.office_location_id} value={location.office_location_id}>
+								{location.location_name}
+							</MenuItem>
+						))}
+					</Select>
+				</FormControl>
+				<FormControl
+					variant='outlined'
+					sx={{ minWidth: 120 }}>
 					<InputLabel>Sort By</InputLabel>
 					<Select
 						value={sort.by}
@@ -683,6 +726,7 @@ const CarManagement = () => {
 									onChange={handleFileChange}
 								/>
 							</Paper>
+							{errors.image && <Typography variant="caption" color="error" sx={{ mt: 1 }}>{errors.image}</Typography>}
 						</Box>
 
 						{/* Right Column: Form Fields */}
@@ -700,6 +744,8 @@ const CarManagement = () => {
 									name='model'
 									value={carFormData.model}
 									onChange={handleNewCarChange}
+									error={!!errors.model}
+									helperText={errors.model}
 								/>
 							</Box>
 
@@ -710,6 +756,8 @@ const CarManagement = () => {
 									name='color'
 									value={carFormData.color}
 									onChange={handleNewCarChange}
+									error={!!errors.color}
+									helperText={errors.color}
 								/>
 							</Box>
 							<Box sx={{ width: { xs: "100%", sm: "calc(33.33% - 11px)" } }}>
@@ -719,6 +767,8 @@ const CarManagement = () => {
 									name='license_plate'
 									value={carFormData.license_plate}
 									onChange={handleNewCarChange}
+									error={!!errors.license_plate}
+									helperText={errors.license_plate}
 								/>
 							</Box>
 
@@ -730,6 +780,8 @@ const CarManagement = () => {
 									type='number'
 									value={carFormData.price_per_hour}
 									onChange={handleNewCarChange}
+									error={!!errors.price_per_hour}
+									helperText={errors.price_per_hour}
 								/>
 							</Box>
 
@@ -741,16 +793,20 @@ const CarManagement = () => {
 									type='number'
 									value={carFormData.price_per_day}
 									onChange={handleNewCarChange}
+									error={!!errors.price_per_day}
+									helperText={errors.price_per_day}
 								/>
 							</Box>
 							<Box sx={{ width: { xs: "100%", sm: "calc(50% - 8px)" } }}>
 								<TextField
 									fullWidth
-									label='number_of_seats'
+									label='Number of Seats'
 									name='number_of_seats'
 									type='number'
 									value={carFormData.number_of_seats}
 									onChange={handleNewCarChange}
+									error={!!errors.number_of_seats}
+									helperText={errors.number_of_seats}
 								/>
 							</Box>
 
@@ -762,11 +818,13 @@ const CarManagement = () => {
 									type='number'
 									value={carFormData.luggage_capacity}
 									onChange={handleNewCarChange}
+									error={!!errors.luggage_capacity}
+									helperText={errors.luggage_capacity}
 								/>
 							</Box>
 
 							<Box sx={{ width: { xs: "100%", sm: "calc(33.33% - 11px)" } }}>
-								<FormControl fullWidth>
+								<FormControl fullWidth error={!!errors.fuel_type}>
 									<InputLabel>Fuel Type</InputLabel>
 									<Select
 										name='fuel_type'
@@ -777,27 +835,28 @@ const CarManagement = () => {
 										<MenuItem value='diesel'>Diesel</MenuItem>
 										<MenuItem value='electric'>Electric</MenuItem>
 									</Select>
+									{errors.fuel_type && <Typography variant="caption" color="error" sx={{ mt: 1, ml: 2 }}>{errors.fuel_type}</Typography>}
 								</FormControl>
 							</Box>
 							<Box sx={{ width: { xs: "100%", sm: "calc(33.33% - 11px)" } }}>
-								<FormControl fullWidth>
+								<FormControl fullWidth error={!!errors.car_type_id}>
 									<InputLabel>Car Type</InputLabel>
 									<Select
 										name='car_type_id'
 										value={carFormData.car_type_id}
 										label='Car Type'
 										onChange={handleNewCarChange}>
-										<MenuItem value={1}>Small</MenuItem>
-										<MenuItem value={2}>Medium</MenuItem>
-										<MenuItem value={3}>Large</MenuItem>
-										<MenuItem value={4}>Luxury</MenuItem>
-										<MenuItem value={5}>People Carrier</MenuItem>
-										<MenuItem value={6}>Van</MenuItem>
+										{carTypes.map((type) => (
+											<MenuItem key={type.car_type_id} value={type.car_type_id}>
+												{type.type_name}
+											</MenuItem>
+										))}
 									</Select>
+									{errors.car_type_id && <Typography variant="caption" color="error" sx={{ mt: 1, ml: 2 }}>{errors.car_type_id}</Typography>}
 								</FormControl>
 							</Box>
 							<Box sx={{ width: { xs: "100%", sm: "calc(33.33% - 11px)" } }}>
-								<FormControl fullWidth>
+								<FormControl fullWidth error={!!errors.transmission}>
 									<InputLabel>Transmission</InputLabel>
 									<Select
 										name='transmission'
@@ -807,10 +866,11 @@ const CarManagement = () => {
 										<MenuItem value='auto'>Auto</MenuItem>
 										<MenuItem value='manual'>Manual</MenuItem>
 									</Select>
+									{errors.transmission && <Typography variant="caption" color="error" sx={{ mt: 1, ml: 2 }}>{errors.transmission}</Typography>}
 								</FormControl>
 							</Box>
 							<Box sx={{ width: { xs: "100%" } }}>
-								<FormControl fullWidth>
+								<FormControl fullWidth error={!!errors.office_location_id}>
 									<InputLabel>
 										Office Location
 									</InputLabel>
@@ -827,6 +887,7 @@ const CarManagement = () => {
 											</MenuItem>
 										))}
 									</Select>
+									{errors.office_location_id && <Typography variant="caption" color="error" sx={{ mt: 1, ml: 2 }}>{errors.office_location_id}</Typography>}
 								</FormControl>
 							</Box>
 						</Box>

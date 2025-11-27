@@ -19,13 +19,8 @@ import {
 	FormControl,
 	InputLabel,
 	TextField,
-	List,
-	ListItem,
-	ListItemButton,
-	ListItemText,
 } from "@mui/material";
 import {
-	AssignmentInd as AssignmentIndIcon,
 	CheckCircle as CheckCircleIcon,
 } from "@mui/icons-material";
 import { useSnackbar } from "../../../contexts/ErrorMessage";
@@ -35,7 +30,7 @@ import useDebouncedSearch from "../../common/useDebouncedSearch";
 
 const dataServices = createDataServices();
 
-const ContactManagement = () => {
+const ContactManagementStaff = () => {
 	const { showSnackbar } = useSnackbar();
 	const [messages, setMessages] = useState([]);
 	const [loading, setLoading] = useState(true);
@@ -44,37 +39,8 @@ const ContactManagement = () => {
 	const [rowsPerPage, setRowsPerPage] = useState(10);
 	const [totalMessages, setTotalMessages] = useState(0);
 	const [selectedMessage, setSelectedMessage] = useState(null);
-	const [openAssignDialog, setOpenAssignDialog] = useState(false);
-	const [selectedStaff, setSelectedStaff] = useState("");
-	const [staffList, setStaffList] = useState([]);
-	const { searchTerm, setSearchTerm, debouncedSearchTerm } = useDebouncedSearch(
-		"",
-		500
-	);
-	const [assignmentFilter, setAssignmentFilter] = useState("All");
 	const [resolutionFilter, setResolutionFilter] = useState("All");
 	const [sortOrder, setSortOrder] = useState("Newest First");
-
-	useEffect(() => {
-		const fetchStaff = async () => {
-			try {
-				const queryParams = new URLSearchParams({
-					filter_by: "staff",
-				});
-				if (debouncedSearchTerm) {
-					queryParams.append("search_by", debouncedSearchTerm);
-				}
-				const response = await dataServices.retrieve(
-					API_ENDPOINTS.users.base,
-					`${API_ENDPOINTS.users.getAll}?${queryParams.toString()}`
-				);
-				setStaffList(response.data.users || []);
-			} catch (error) {
-				showSnackbar("Failed to fetch staff list.", "error");
-			}
-		};
-		fetchStaff();
-	}, [debouncedSearchTerm]);
 
 	const fetchMessages = async () => {
 		setLoading(true);
@@ -84,17 +50,14 @@ const ContactManagement = () => {
 				max: rowsPerPage,
 			});
 
-			if (assignmentFilter !== "All") {
-				params.append("assigned", assignmentFilter === "Assigned");
-			}
 			if (resolutionFilter !== "All") {
 				params.append("resolve", resolutionFilter === "Resolved");
 			}
 			params.append("sort_by_time_asc", sortOrder === "Oldest First");
 
 			const response = await dataServices.retrieve(
-				API_ENDPOINTS.contact.base,
-				`${API_ENDPOINTS.contact.getContactUs}?${params.toString()}`
+				API_ENDPOINTS.staff.baseStaff,
+				`${API_ENDPOINTS.staff.getContactUs}?${params.toString()}`
 			);
 			const mappedData = response.data.data.map((msg) => ({
 				id: msg.contact_us_id,
@@ -104,7 +67,6 @@ const ContactManagement = () => {
 				message: msg.description,
 				receivedAt: msg.created_at,
 				status: msg.is_resolved ? "Resolved" : "New",
-				assignedTo: msg.assigned_staff_name,
 			}));
 						setMessages(mappedData);
 						setTotalMessages(response.data.total);			setError(null);
@@ -118,40 +80,9 @@ const ContactManagement = () => {
 
 	useEffect(() => {
 		fetchMessages();
-	}, [page, rowsPerPage, assignmentFilter, resolutionFilter, sortOrder]);
+	}, [page, rowsPerPage, resolutionFilter, sortOrder]);
 
-	const handleOpenAssignDialog = (message) => {
-		setSelectedMessage(message);
-		setOpenAssignDialog(true);
-	};
 
-	const handleCloseAssignDialog = () => {
-		setOpenAssignDialog(false);
-		setSelectedMessage(null);
-		setSelectedStaff("");
-	};
-
-	const handleAssignTask = async () => {
-		if (!selectedStaff) {
-			showSnackbar("Please select a staff member.", "error");
-			return;
-		}
-		try {
-			await dataServices.retrievePOST(
-				{
-					contact_us_id: selectedMessage.id,
-					staff_id: selectedStaff,
-				},
-				API_ENDPOINTS.contact.base +
-					API_ENDPOINTS.contact.resolveWithStaffAssign
-			);
-			showSnackbar("Task assigned successfully!", "success");
-			handleCloseAssignDialog();
-			fetchMessages(); // Refresh the list
-		} catch (error) {
-			showSnackbar(error.message || "Failed to assign task.", "error");
-		}
-	};
 
 	const handleRowClick = (message) => {
 		setSelectedMessage(message);
@@ -173,8 +104,8 @@ const ContactManagement = () => {
 	const handleResolve = async (messageId) => {
 		try {
 			await dataServices.retrieve(
-				API_ENDPOINTS.contact.base,
-				API_ENDPOINTS.contact.resolveAdmin(messageId)
+				API_ENDPOINTS.staff.baseStaff,
+				API_ENDPOINTS.staff.resolveContactUs(messageId)
 			);
 			showSnackbar("Message marked as resolved!", "success");
 			fetchMessages(); // Refresh the list
@@ -251,11 +182,8 @@ const ContactManagement = () => {
 				render: (row) => {
 					let color = "default";
 					let label = row.status;
-					if (row.status === "New" && !row.assignedTo) {
+					if (row.status === "New") {
 						color = "primary";
-					} else if (row.assignedTo) {
-						color = "warning";
-						label = "Assigned";
 					} else if (row.status === "Resolved") {
 						color = "success";
 					}
@@ -269,13 +197,6 @@ const ContactManagement = () => {
 				},
 			},
 			{
-				id: "assignedTo",
-				label: "Assigned To",
-				sx: {
-					color: "var(--text-color)",
-				},
-			},
-			{
 				id: "actions",
 				label: "Actions",
 				sx: {
@@ -284,7 +205,7 @@ const ContactManagement = () => {
 				align: "center",
 				render: (row) => (
 					<>
-						{row.status !== "Resolved" && !row.assignedTo && (
+						{row.status !== "Resolved" && (
 							<Tooltip title='Mark as Resolved'>
 								<IconButton
 									onClick={(e) => {
@@ -292,17 +213,6 @@ const ContactManagement = () => {
 										handleResolve(row.id);
 									}}>
 									<CheckCircleIcon color='success' />
-								</IconButton>
-							</Tooltip>
-						)}
-						{row.status !== "Resolved" && (
-							<Tooltip title='Assign to Staff'>
-								<IconButton
-									onClick={(e) => {
-										e.stopPropagation();
-										handleOpenAssignDialog(row);
-									}}>
-									<AssignmentIndIcon color='info' />
 								</IconButton>
 							</Tooltip>
 						)}
@@ -320,22 +230,8 @@ const ContactManagement = () => {
 				bgcolor: "var(--background-paper)",
 				color: "var(--text-color)",
 			}}>
-			<Typography variant="h4" sx={{ mb: 2 }}>Contact US Management</Typography>
+			<Typography variant="h4" sx={{ mb: 2 }}>Contact Us Management</Typography>
 			<Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-				<FormControl fullWidth>
-					<InputLabel>Assignment Status</InputLabel>
-					<Select
-						value={assignmentFilter}
-						label='Assignment Status'
-						onChange={(e) => {
-							setAssignmentFilter(e.target.value);
-							setPage(0);
-						}}>
-						<MenuItem value='All'>All</MenuItem>
-						<MenuItem value='Assigned'>Assigned</MenuItem>
-						<MenuItem value='Unassigned'>Unassigned</MenuItem>
-					</Select>
-				</FormControl>
 				<FormControl fullWidth>
 					<InputLabel>Resolution Status</InputLabel>
 					<Select
@@ -379,7 +275,7 @@ const ContactManagement = () => {
 			/>
 
 			<Dialog
-				open={!!selectedMessage && !openAssignDialog}
+				open={!!selectedMessage}
 				onClose={handleCloseDialog}
 				maxWidth='md'
 				fullWidth
@@ -438,66 +334,9 @@ const ContactManagement = () => {
 				</DialogActions>
 			</Dialog>
 
-			<Dialog
-				open={openAssignDialog}
-				onClose={handleCloseAssignDialog}
-				maxWidth='xs'
-				fullWidth
-				PaperProps={{
-					sx: {
-						bgcolor: "var(--background-paper)",
-						color: "var(--text-color)",
-					},
-				}}>
-				<DialogTitle>Assign Task to Staff</DialogTitle>
-				<DialogContent>
-					<TextField
-						label='Search Staff'
-						variant='outlined'
-						fullWidth
-						value={searchTerm}
-						onChange={(e) => setSearchTerm(e.target.value)}
-						sx={{ my: 1 }}
-					/>
-					<Paper
-						variant='outlined'
-						sx={{ maxHeight: 300, overflow: "auto" }}>
-						<List dense>
-							{staffList.length > 0 ? (
-								staffList.map((staff) => (
-									<ListItemButton
-										key={staff.user_id}
-										selected={selectedStaff === staff.user_id}
-										onClick={() => setSelectedStaff(staff.user_id)}>
-										<ListItemText
-											primary={staff.name}
-											secondary={staff.email}
-											secondaryTypographyProps={{
-												color: "var(--text-secondary-color)",
-											}}
-										/>
-									</ListItemButton>
-								))
-							) : (
-								<ListItem>
-									<ListItemText primary='No staff found.' />
-								</ListItem>
-							)}
-						</List>
-					</Paper>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={handleCloseAssignDialog}>Cancel</Button>
-					<Button
-						onClick={handleAssignTask}
-						variant='contained'
-						disabled={!selectedStaff}>
-						Assign
-					</Button>
-				</DialogActions>
-			</Dialog>
+
 		</Paper>
 	);
 };
 
-export default ContactManagement;
+export default ContactManagementStaff;

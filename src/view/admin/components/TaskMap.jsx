@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { MapContainer, TileLayer, useMap, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet-routing-machine";
 
@@ -44,7 +44,7 @@ const RoutingMachine = ({ start, end, type }) => {
 				const marker = L.marker(waypoint.latLng, markerOptions);
 
 				const popupContent = isStart
-					? "Company Location"
+					? "Your Location"
 					: `${type} Destination`;
 
 				marker.bindPopup(popupContent);
@@ -60,7 +60,7 @@ const RoutingMachine = ({ start, end, type }) => {
 };
 
 const TaskMap = ({ start, end, type }) => {
-	// Use the 'end' coordinate as a fallback center if 'start' is not available
+	// Center on end initially, or start if available
 	const center = start ? [start.lat, start.lng] : [end.lat, end.lng];
 
 	return (
@@ -72,6 +72,11 @@ const TaskMap = ({ start, end, type }) => {
 				url={`https://api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=${import.meta.env.VITE_TOMTOM_KEY}`}
 				attribution='&copy; <a href="https://www.tomtom.com">TomTom</a>'
 			/>
+			{end && (
+				<Marker position={[end.lat, end.lng]}>
+					<Popup>{type} Location</Popup>
+				</Marker>
+			)}
 			{start && end && (
 				<RoutingMachine
 					start={start}

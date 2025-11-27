@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -24,15 +24,6 @@ import { createDataServices } from "../../../services/DataServices";
 import { API_ENDPOINTS } from "../../../services/Configuration";
 
 // Icons
-const customMarker = new L.Icon({
-  iconUrl: "https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
 const selectedMarker = new L.Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/149/149059.png",
   iconSize: [40, 40],
@@ -109,8 +100,28 @@ const MapUpdater = ({ currentPosition, destination, showRoute }) => {
   return null;
 };
 
+// Map click handler component
+const MapClickHandler = ({ onMapClick }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!onMapClick) return;
+
+    const handleMapClick = (e) => {
+      onMapClick(e.latlng);
+    };
+
+    map.on('click', handleMapClick);
+
+    return () => {
+      map.off('click', handleMapClick);
+    };
+  }, [map, onMapClick]);
+
+  return null;
+};
+
 const Map = ({
-  selectedLocation,
   currentPosition,
   showRoute,
   onMapClick,
@@ -122,7 +133,6 @@ const Map = ({
   searchTerm,
   onSuggestionsChange,
 }) => {
-  const [map, setMap] = useState(null);
 
   // Debounced search
   useEffect(() => {
@@ -184,7 +194,6 @@ const Map = ({
       zoom={13}
       scrollWheelZoom
       style={{ height: "100%", width: "100%" }}
-      whenCreated={setMap}
     >
       <TileLayer
         attribution='&copy; TomTom'
@@ -230,17 +239,8 @@ const Map = ({
         showRoute={showRoute}
       />
 
-      {/* Click to select */}
-      {onMapClick && (
-        <div
-          style={{ pointerEvents: "none" }}
-          onClick={(e) => {
-            e.stopPropagation();
-            const latlng = map?.mouseEventToLatLng(e.nativeEvent);
-            if (latlng) onMapClick(latlng);
-          }}
-        />
-      )}
+      {/* Handle map clicks */}
+      <MapClickHandler onMapClick={onMapClick} />
     </MapContainer>
   );
 };

@@ -15,27 +15,22 @@ import {
 	CircularProgress,
 	IconButton,
 } from "@mui/material";
-import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
-import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
 import ContactMailIcon from "@mui/icons-material/ContactMail";
 import AssignmentIcon from "@mui/icons-material/Assignment";
-import LocationOnIcon from "@mui/icons-material/LocationOn";
-import CategoryIcon from "@mui/icons-material/Category";
-import HomeIcon from "@mui/icons-material/Home";
-import DashboardIcon from "@mui/icons-material/Dashboard";
 import HistoryIcon from "@mui/icons-material/History";
-import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import BuildIcon from "@mui/icons-material/Build";
 import PersonIcon from "@mui/icons-material/Person";
 
 import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
 import { useSnackbar } from "../../contexts/ErrorMessage";
 import { createDataServices } from "../../services/DataServices";
 import MenuIcon from "@mui/icons-material/Menu";
-import { useUserRole } from "../../contexts/userRoleContext";
 
 const drawerWidth = 260;
 
-const AdminLayout = () => {
+const StaffLayout = () => {
 	const dataServices = createDataServices();
 	const { showSnackbar } = useSnackbar();
 	const navigate = useNavigate();
@@ -61,35 +56,35 @@ const AdminLayout = () => {
 		}
 	};
 
-	const adminNavItems = [
+	const staffNavItems = [
 		{
-			text: "Dashboard",
-			to: "/admin/dashboard",
-			icon: <DashboardIcon />,
+			text: "Task Management",
+			to: "/staff/task-management",
+			icon: <AssignmentIcon />,
 		},
 		{
-			text: "User Management",
-			to: "/admin/user-management",
-			icon: <AdminPanelSettingsIcon />,
+			text: "Pickup & Dropoff",
+			to: "/staff/pickup-dropoff",
+			icon: <LocalShippingIcon />,
 		},
 		{
-			text: "Car Management",
-			to: "/admin/car-management",
-			icon: <DirectionsCarIcon />,
+			text: "Active Tasks",
+			to: "/staff/active-tasks",
+			icon: <CheckCircleIcon />,
 		},
 		{
-			text: "Location Management",
-			to: "/admin/location-management",
-			icon: <LocationOnIcon />,
+			text: "Task History",
+			to: "/staff/task-history",
+			icon: <HistoryIcon />,
 		},
 		{
-			text: "Car Type Management",
-			to: "/admin/car-type-management",
-			icon: <CategoryIcon />,
+			text: "Maintenance",
+			to: "/staff/maintenance",
+			icon: <BuildIcon />,
 		},
 		{
 			text: "Contact Management",
-			to: "/admin/contact-management",
+			to: "/staff/contact-management",
 			icon: <ContactMailIcon />,
 		},
 		{
@@ -98,8 +93,6 @@ const AdminLayout = () => {
 			icon: <PersonIcon />,
 		},
 	];
-
-	const navItems = adminNavItems;
 
 	return (
 		<Box sx={{ display: "flex", bgcolor: "var(--background-color)" }}>
@@ -124,7 +117,7 @@ const AdminLayout = () => {
 						component='div'
 						fontWeight={600}
 						color='var(--text-color)'>
-						Admin Dashboard
+						Staff Dashboard
 					</Typography>
 
 					<Button
@@ -162,7 +155,7 @@ const AdminLayout = () => {
 					<Toolbar />
 					<Box sx={{ overflow: "auto", mt: 4 }}>
 						<List>
-							{navItems.map((item) => (
+							{staffNavItems.map((item) => (
 								<ListItem
 									key={item.text}
 									sx={{
@@ -218,7 +211,7 @@ const AdminLayout = () => {
 					<Toolbar />
 					<Box sx={{ overflow: "auto", mt: 4 }}>
 						<List>
-							{navItems.map((item) => (
+							{staffNavItems.map((item) => (
 								<ListItem
 									key={item.text}
 									sx={{
@@ -276,4 +269,4 @@ const AdminLayout = () => {
 	);
 };
 
-export default AdminLayout;
+export default StaffLayout;

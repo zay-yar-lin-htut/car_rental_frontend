@@ -2,6 +2,8 @@
  * Global configuration settings for the data fetching system
  */
 
+import { Dashboard } from "@mui/icons-material";
+
 // Default timeout for requests in milliseconds (10 seconds)
 export const DEFAULT_TIMEOUT = 10000;
 
@@ -124,50 +126,6 @@ export const API_ENDPOINTS = {
     cars: {
         base: '/api',
         getAll: '/cars',
-        // Sample query parameters:
-        // http://127.0.0.1:8000/api/cars?
-        // first=1&max=5&
-        // asc_day=false&
-        // asc_hour=true&
-        // asc_total=true&
-        // pickup_datetime=2025-10-24%2022%3A50%3A38&
-        // dropoff_datetime=2025-10-30%2022%3A50%3A38&
-        // car_type_id=4&
-        // fuel_type=petrol
-        //
-        // sample response
-        //    {
-        //         "success": true,
-        //         "message": "Cars Retrieved Successfully",
-        //         "data": {
-        //             "data": [
-        //                 {
-        //                     "car_id": 11,
-        //                     "car_type": "small",
-        //                     "model": "Honda Fit",
-        //                     "description": "Fuel-efficient subcompact hatchback.",
-        //                     "license_plate": "06-HF0A (MDY)",
-        //                     "price_per_hour": "5000.00",
-        //                     "price_per_day": "80000.00",
-        //                     "availability": 1,
-        //                     "number_of_seats": 5,
-        //                     "luggage_capacity": 3,
-        //                     "color": "Black",
-        //                     "transmission": "auto",
-        //                     "fuel_type": "petrol",
-        //                     "created_at": "2025-11-08 12:29:37",
-        //                     "updated_at": "2025-11-08 12:29:37",
-        //                     "car_image_url": "https://pub-64f9509f377f4746abc03aba2add5b1c.r2.dev/Cars/honda_fit_black.png",
-        //                     "total_price": 480000
-        //                 },
-        //             ],
-        //             "first": 1,
-        //             "max": 10,
-        //             "total": 26,
-        //             "total_page": 3
-        //         }
-        //     },
-
         getById: (id) => `/cars/${id}`,
         create: '/api/admin/car-create',
         update: (id) => `/api/admin/car-update/${id}`,
@@ -177,28 +135,9 @@ export const API_ENDPOINTS = {
     carTypes: {
         base: '/api',
         getAll: '/car-types',
-    },
-    // Location endpoints
-    locations: {
-        base: '/api',
-        getAll: '/locations',
-        // sample response
-        // {
-        //     "sucess": true,
-        //     "message": "Office locations found",
-        //     "data": [
-        //         {
-        //             "office_location_id": 1,
-        //             "location_name": "Mandalay office",
-        //             "location": [
-        //                 "21.869075",
-        //                 "96.105194"
-        //             ],
-        //             "created_at": "2025-08-20 10:04:54",
-        //             "updated_at": "2025-10-06 18:28:28"
-        //         },
-        //     ]
-        // }
+        create: '/admin/car-type-create',
+        update: (id) => `/admin/car-type-update/${id}`,
+        delete: (id) => `/admin/car-type-delete/${id}`,
     },
     // Booking endpoints
     bookings: {
@@ -221,28 +160,53 @@ export const API_ENDPOINTS = {
         banUser: "/admin/ban-user/",
         myBookings: '/user/my-bookings',
         isHaveFine: '/is-have-fines',
-        // sample response
-        // {
-        //     "success": true,
-        //     "message": "Fines Status Retrieved Successfully",
-        //     "data": {
-        //         "No-show Fine": 40000,
-        //         "Cancellation Fine": 210000,
-        //         "Total Fine": 250000
-        //     }
-        // }
+        changePassword: '/change-password',
+        // sample request body: { current_password: string, new_password: string, new_password_confirmation: string }
+    },
+    Dashboard: {
+        base: '/api',
+        getData: '/admin/revenue-dashboard',
     },
     staff: {
-        tdyTakeBack: "/staff/today-takebacks",
-        tdyDeli: "/staff/today-deliveries",
+        baseStaff: '/api/staff',
+        staffHaveTask: '/is-have-task',
+        tdyTakeBack: "/today-takebacks",
+        tdyDeli: "/today-deliveries",
+        claimTakeBack: (id) => `/claim-takeback/${id}`,
+        claimDelivery: (id) => `/claim-delivery/${id}`,
+        completeTakeBack: (id) => `/complete-takeback/${id}`,
+        completeDelivery: (id) => `/complete-delivery/${id}`,
+        taskHistory: "/task-history",
+        activeTasks: "/my-active-tasks",
+        costByTicket: (ticket) => `/cost-by-ticket/${ticket}`,
+        getContactUs: "/contact-us",
+        resolveContactUs: (id) => `/resolve-contact-us/${id}`,
+        maintenanceTasks: "/maintenance-tasks",
+        createMaintenanceReport: "/report-damage",
+        completeMaintenanceTask: (id) => `/complete-maintenance/${id}`,
+        getContactUs: '/contact-us',
+        resolveContactUs: (id) => `/resolve-contact-us/${id}`,
+
+        todayPickups: "/today-self-pickups",
+        todayDropoffs: "/today-self-dropoffs",
+        completeSelfPickup: `/complete-self-pickup`,
+        completeSelfDropoff: `/complete-self-dropoff`,
+
+        noshowPickup: `/no-show-pickup`,
+        // sample request body: { booking_id: number }
+        noshowDelivery: `/no-show-delivery`,
+        // sample request body: { booking_id: number }
     },
-    // Image proxy endpoint
     image: {
         proxy: '/api/proxy-image',
     },
     location: {
         base: '/api',
+        getAll: '/locations',
         getOffice: '/office-locations',
+        createOffice: '/admin/office-location-create',
+        updateOffice: (id) => `/admin/office-location-update/${id}`,
+        deleteOffice: (id) => `/admin/office-location-delete/${id}`,
     },
     contact: {
         base: '/api',
@@ -253,6 +217,7 @@ export const API_ENDPOINTS = {
     },
     review: {
         base: '/api',
+        get: '/admin/reviews',
         create: '/user/review-create',
     },
     userPreferenceLocations: {

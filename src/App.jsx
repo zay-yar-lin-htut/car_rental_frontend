@@ -8,11 +8,18 @@ import { AUTH_CONFIG } from "./services/Configuration";
 import { SnackbarProvider } from "./contexts/ErrorMessage";
 import { UserRoleProvider, useUserRole } from "./contexts/userRoleContext";
 import { IntroFormProvider } from "./contexts/IntroFormProvider";
+import Dashboard from "./view/admin/components/Dashboard";
 import UserManagement from "./view/admin/components/UserManagement";
 import CarManagement from "./view/admin/components/CarManagement";
-import History from "./history/History";
-import TaskManagement from "./view/admin/components/TaskManagement";
+import LocationManagement from "./view/admin/components/LocationManagement";
+import CarTypeManagement from "./view/admin/components/CarTypeManagement";
 import ContactManagement from "./view/admin/components/ContactManagement";
+import TaskManagement from "./view/admin/components/TaskManagement";
+import TaskHistory from "./view/admin/components/TaskHistory";
+import ActiveTasks from "./view/admin/components/ActiveTasks";
+import Maintenance from "./view/admin/components/Maintenance";
+import ContactManagementStaff from "./view/admin/components/ContactManagementStaff";
+import PickupDropoffManagement from "./view/admin/components/PickupDropoffManagement";
 import Loader from "./Loader";
 
 const Home = lazy(() => import("./view/home/Home"));
@@ -20,10 +27,12 @@ const Login = lazy(() => import("./view/login/Login"));
 const Register = lazy(() => import("./view/login/Register"));
 const UserProfile = lazy(() => import("./view/profile/UserProfile"));
 const AdminLayout = lazy(() => import("./view/admin/AdminLayout"));
+const StaffLayout = lazy(() => import("./view/admin/StaffLayout"));
 const OurLocationsPage = lazy(() =>
 	import("./view/home/Components/OurLocation")
 );
 const Ride = lazy(() => import("./view/ride/Ride"));
+const History = lazy(() => import("./history/History"));
 
 // Protected Route wrapper component
 // ProtectedRoute.js - For routes that require authentication
@@ -42,6 +51,23 @@ const ProtectedRoute = ({ children }) => {
 	return children;
 };
 
+// Role Protected Route wrapper component
+const RoleProtectedRoute = ({ children, allowedRoles }) => {
+	const { role } = useUserRole();
+
+	if (!allowedRoles.includes(role)) {
+		if (role === "admin") {
+			return <Navigate to="/admin/dashboard" replace />;
+		} else if (role === "staff") {
+			return <Navigate to="/staff/task-management" replace />;
+		} else {
+			return <Navigate to="/home" replace />;
+		}
+	}
+
+	return children;
+};
+
 // AuthRoute.js - For auth pages that should only be accessible when not logged in
 const AuthRoute = ({ children }) => {
 	const isAuthenticated = AUTH_CONFIG.isAuthenticated();
@@ -51,7 +77,7 @@ const AuthRoute = ({ children }) => {
 		if (role === "admin") {
 			return (
 				<Navigate
-					to='/admin/user-management'
+					to='/admin/dashboard'
 					replace
 				/>
 			);
@@ -59,7 +85,7 @@ const AuthRoute = ({ children }) => {
 		if (role === "staff") {
 			return (
 				<Navigate
-					to='/admin/task-management'
+					to='/staff/task-management'
 					replace
 				/>
 			);
@@ -82,7 +108,7 @@ const HomeRoute = ({ children }) => {
 	if (role === "admin") {
 		return (
 			<Navigate
-				to='/admin/user-management'
+				to='/admin/dashboard'
 				replace
 			/>
 		);
@@ -142,14 +168,14 @@ const router = createBrowserRouter([
 			</ProtectedRoute>
 		),
 	},
-	{
-		path: "/history",
-		element: (
-			<ProtectedRoute>
-				<History />
-			</ProtectedRoute>
-		),
-	},
+ 	{
+ 		path: "/history",
+ 		element: (
+ 			<ProtectedRoute>
+ 				<History />
+ 			</ProtectedRoute>
+ 		),
+ 	},
 	{
 		path: "/our-locations",
 		element: <OurLocationsPage />,
@@ -167,7 +193,9 @@ const router = createBrowserRouter([
 		path: "/admin",
 		element: (
 			<ProtectedRoute>
-				<AdminLayout />
+				<RoleProtectedRoute allowedRoles={["admin"]}>
+					<AdminLayout />
+				</RoleProtectedRoute>
 			</ProtectedRoute>
 		),
 		children: [
@@ -175,10 +203,14 @@ const router = createBrowserRouter([
 				index: true,
 				element: (
 					<Navigate
-						to='/admin/user-management'
+						to='/admin/dashboard'
 						replace
 					/>
 				),
+			},
+			{
+				path: "dashboard",
+				element: <Dashboard />,
 			},
 			{
 				path: "user-management",
@@ -189,12 +221,86 @@ const router = createBrowserRouter([
 				element: <CarManagement />,
 			},
 			{
+				path: "location-management",
+				element: <LocationManagement />,
+			},
+			{
+				path: "car-type-management",
+				element: <CarTypeManagement />,
+			},
+			{
 				path: "contact-management",
 				element: <ContactManagement />,
 			},
 			{
+				path: "profile",
+				element: <UserProfile />,
+			},
+			{
 				path: "task-management",
 				element: <TaskManagement />,
+			},
+			{
+				path: "active-tasks",
+				element: <ActiveTasks />,
+			},
+			{
+				path: "task-history",
+				element: <TaskHistory />,
+			},
+			{
+				path: "maintenance",
+				element: <Maintenance />,
+			},
+		],
+	},
+	// Staff Routes with a dedicated layout
+	{
+		path: "/staff",
+		element: (
+			<ProtectedRoute>
+				<RoleProtectedRoute allowedRoles={["staff"]}>
+					<StaffLayout />
+				</RoleProtectedRoute>
+			</ProtectedRoute>
+		),
+		children: [
+			{
+				index: true,
+				element: (
+					<Navigate
+						to='/staff/task-management'
+						replace
+					/>
+				),
+			},
+			{
+				path: "task-management",
+				element: <TaskManagement />,
+			},
+			{
+				path: "pickup-dropoff",
+				element: <PickupDropoffManagement />,
+			},
+			{
+				path: "active-tasks",
+				element: <ActiveTasks />,
+			},
+			{
+				path: "task-history",
+				element: <TaskHistory />,
+			},
+			{
+				path: "maintenance",
+				element: <Maintenance />,
+			},
+			{
+				path: "contact-management",
+				element: <ContactManagementStaff />,
+			},
+			{
+				path: "profile",
+				element: <UserProfile />,
 			},
 		],
 	},
