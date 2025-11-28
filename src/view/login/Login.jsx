@@ -34,6 +34,7 @@ const Login = () => {
 	const [rememberMe, setRememberMe] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [errors, setErrors] = useState({});
+	const [error, setError] = useState("");
 	const [forgotDialogOpen, setForgotDialogOpen] = useState(false);
 	const navigate = useNavigate();
 	const { showSnackbar } = useSnackbar();
@@ -55,6 +56,7 @@ const Login = () => {
 		if (errors[field]) {
 			setErrors((prev) => ({ ...prev, [field]: null }));
 		}
+		setError("");
 	};
 
 	const handleForgotPassword = () => {
@@ -80,7 +82,7 @@ const Login = () => {
 				API_ENDPOINTS.auth.login
 			);
 			if (!response.success) {
-				showSnackbar(response.message, "error");
+				setError(response.message);
 				return;
 			}
 			showSnackbar(response.message, "success");
@@ -98,7 +100,7 @@ const Login = () => {
 				navigate("/");
 			}
 		} catch (err) {
-			showSnackbar(err.message || "An error occurred during login.", "error");
+			setError(err.message || "An error occurred during login.");
 		} finally {
 			setLoading(false);
 		}
@@ -169,6 +171,7 @@ const Login = () => {
 				</Typography>
 
 				<Box sx={{ mt: 3, width: "100%" }}>
+					{error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
 					<TextField
 						margin='normal'

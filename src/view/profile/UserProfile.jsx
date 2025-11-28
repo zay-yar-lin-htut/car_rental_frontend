@@ -72,15 +72,7 @@ const ChangePasswordDialog = ({ open, onClose, onSave, isSaving }) => {
 		setFormData(prev => ({ ...prev, [name]: value }));
 	};
 
-	const handleSave = async () => {
-		if (!formData.current_password || !formData.new_password || !formData.new_password_confirmation) {
-			setError("All fields are required.");
-			return;
-		}
-		if (formData.new_password !== formData.new_password_confirmation) {
-			setError("New passwords do not match.");
-			return;
-		}
+ 	const handleSave = async () => {
 		setError("");
 		try {
 			await onSave(formData);
@@ -154,6 +146,19 @@ const EditProfileDialog = ({ open, onClose, onSave, initialData, isSaving }) => 
 	const [selectedFile, setSelectedFile] = useState(null);
 	const [previewImage, setPreviewImage] = useState(null);
 	const [error, setError] = useState("");
+	const [errors, setErrors] = useState({});
+
+	const validateForm = () => {
+		const newErrors = {};
+		if (!formData.name?.trim()) newErrors.name = "Name is required";
+		if (!formData.email?.trim()) newErrors.email = "Email is required";
+		else if (!/\S+@\S+\.\S+/.test(formData.email))
+			newErrors.email = "Invalid email address";
+		if (formData.phone?.trim() && !/^\+?\d{10,15}$/.test(formData.phone.replace(/\s/g, "")))
+			newErrors.phone = "Invalid phone number";
+		setErrors(newErrors);
+		return Object.keys(newErrors).length === 0;
+	};
 
 	useEffect(() => {
 		if (open && initialData) {
@@ -161,6 +166,7 @@ const EditProfileDialog = ({ open, onClose, onSave, initialData, isSaving }) => 
 			setPreviewImage(initialData.profile_image_url || null);
 			setSelectedFile(null);
 			setError("");
+			setErrors({});
 		}
 	}, [open, initialData]);
 
@@ -180,18 +186,19 @@ const EditProfileDialog = ({ open, onClose, onSave, initialData, isSaving }) => 
 		} else {
 			setFormData(prev => ({ ...prev, [name]: value }));
 		}
+		if (errors[name]) {
+			setErrors((prev) => ({ ...prev, [name]: null }));
+		}
 	};
 
 	const handleSave = async () => {
-		if (!formData.name?.trim() || !formData.email?.trim()) {
-			setError("Name and email are required.");
-			return;
-		}
+		if (!validateForm()) return;
 		setError("");
-		try {
-			await onSave({ formData, selectedFile });
-		} catch (err) {
-			setError(err.message || "Failed to update profile.");
+		const result = await onSave({ formData, selectedFile });
+		if (result.success) {
+			handleClose();
+		} else {
+			setError(result.message);
 		}
 	};
 
@@ -232,6 +239,8 @@ const EditProfileDialog = ({ open, onClose, onSave, initialData, isSaving }) => 
 							onChange={handleInputChange}
 							required={field.required}
 							disabled={isSaving}
+							error={!!errors[field.name]}
+							helperText={errors[field.name]}
 							InputLabelProps={field.type === "file" ? { shrink: true } : {}}
 							InputProps={field.type === "file" ? { inputProps: { accept: field.accept } } : {}}
 							sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
@@ -297,13 +306,16 @@ const ModernUserProfile = () => {
 		setTimeout(() => navigate("/"), 800);
 	};
 
-	const handleChangePassword = async (formData) => {
+ 	const handleChangePassword = async (formData) => {
 		setIsChangingPassword(true);
 		try {
-			await dataService.retrievePOST(
+			const response = await dataService.retrievePOST(
 				formData,
 				API_ENDPOINTS.users.base + API_ENDPOINTS.users.changePassword
 			);
+			if (!response.success) {
+				throw new Error(response.message || "Failed to change password.");
+			}
 			showSnackbar("Password changed successfully!", "success");
 		} catch (error) {
 			throw new Error(error.message || "Failed to change password.");

@@ -13,6 +13,7 @@ import {
 	InputAdornment,
 	FormControl,
 	FormHelperText,
+	Alert,
 } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
@@ -41,6 +42,7 @@ const Register = () => {
 	});
 	const [loading, setLoading] = useState(false);
 	const [errors, setErrors] = useState({});
+	const [error, setError] = useState("");
 	const navigate = useNavigate();
 	const { showSnackbar } = useSnackbar();
 
@@ -53,6 +55,7 @@ const Register = () => {
 		if (errors[name]) {
 			setErrors((prev) => ({ ...prev, [name]: null }));
 		}
+		setError("");
 	};
 
 	const togglePasswordVisibility = (field) => {
@@ -95,13 +98,13 @@ const Register = () => {
 				API_ENDPOINTS.auth.register
 			);
 			if (!response.success) {
-				showSnackbar(response.message, "error");
+				setError(response.message);
 				return;
 			}
 			showSnackbar(response.message, "success");
 			navigate("/login");
 		} catch (err) {
-			showSnackbar(err.message || "Registration failed", "error");
+			setError(err.message || "Registration failed");
 		}
 		setLoading(false);
 	};
@@ -175,6 +178,7 @@ const Register = () => {
 				<Stack
 					spacing={2}
 					sx={{ mt: 3, width: "100%" }}>
+					{error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
 					<TextField
 						fullWidth
 						required
@@ -278,11 +282,15 @@ const Register = () => {
 									variant='body2'
 									sx={{ color: "var(--text-secondary-color)" }}>
 									I agree to the{" "}
-									<Link
-										to='/terms'
-										style={{ color: "var(--primary-color)" }}>
+									<Typography
+										component="span"
+										sx={{
+											color: "var(--primary-color)",
+											textDecoration: "underline",
+											cursor: "default"
+										}}>
 										Terms and Conditions
-									</Link>
+									</Typography>
 								</Typography>
 							}
 						/>

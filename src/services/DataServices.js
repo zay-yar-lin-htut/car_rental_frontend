@@ -48,17 +48,22 @@ export const createDataServices = () => {
             });
             console.log("data", JSON.stringify(data));
 
-            if (!response.ok) {
-                const error = new Error();
-                error.response = { status: response.status };
-                throw error;
+            let responseData;
+            try {
+                responseData = await response.json();
+            } catch {
+                responseData = { message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
             }
 
-            return await response.json();
+            if (!response.ok) {
+                const errorMessage = responseData.message || ERROR_CONFIG.getErrorMessage({ response: { status: response.status } });
+                throw new Error(errorMessage);
+            }
+
+            return responseData;
         } catch (error) {
-            const errorMessage = ERROR_CONFIG.getErrorMessage(error);
-            console.error("Error in Register:", errorMessage);
-            throw new Error(errorMessage);
+            console.error("Error in Register:", error.message);
+            throw error;
         }
     };
 
@@ -130,17 +135,22 @@ export const createDataServices = () => {
                 },
             });
 
-            if (!response.ok) {
-                const error = new Error();
-                error.response = { status: response.status };
-                throw error;
+            let responseData;
+            try {
+                responseData = await response.json();
+            } catch {
+                responseData = { message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
             }
 
-            return await response.json();
+            if (!response.ok) {
+                const errorMessage = responseData.message || ERROR_CONFIG.getErrorMessage({ response: { status: response.status } });
+                throw new Error(errorMessage);
+            }
+
+            return responseData;
         } catch (error) {
-            const errorMessage = ERROR_CONFIG.getErrorMessage(error);
-            console.error("Error in retrieveGET:", errorMessage);
-            throw new Error(errorMessage);
+            console.error("Error in retrieveGET:", error.message);
+            throw error;
         }
     };
 
@@ -160,17 +170,22 @@ export const createDataServices = () => {
                 body: data,
             });
 
-            if (!response.ok) {
-                const error = new Error();
-                error.response = { status: response.status };
-                throw error;
+            let responseData;
+            try {
+                responseData = await response.json();
+            } catch {
+                responseData = { message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
             }
 
-            return await response.json();
+            if (!response.ok) {
+                const errorMessage = responseData.message || ERROR_CONFIG.getErrorMessage({ response: { status: response.status } });
+                throw new Error(errorMessage);
+            }
+
+            return responseData;
         } catch (error) {
-            const errorMessage = ERROR_CONFIG.getErrorMessage(error);
-            console.error("Error in retrievePOSTFormData:", errorMessage);
-            throw new Error(errorMessage);
+            console.error("Error in retrievePOSTFormData:", error.message);
+            throw error;
         }
     };
 
@@ -187,17 +202,22 @@ export const createDataServices = () => {
                 body: JSON.stringify(data),
             });
 
-            if (!response.ok) {
-                const error = new Error();
-                error.response = { status: response.status };
-                throw error;
+            let responseData;
+            try {
+                responseData = await response.json();
+            } catch {
+                responseData = { message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
             }
 
-            return await response.json();
+            if (!response.ok) {
+                const errorMessage = responseData.message || ERROR_CONFIG.getErrorMessage({ response: { status: response.status } });
+                throw new Error(errorMessage);
+            }
+
+            return responseData;
         } catch (error) {
-            const errorMessage = ERROR_CONFIG.getErrorMessage(error);
-            console.error("Error in retrievePUT:", errorMessage);
-            throw new Error(errorMessage);
+            console.error("Error in retrievePUT:", error.message);
+            throw error;
         }
     };
 
@@ -212,17 +232,22 @@ export const createDataServices = () => {
                 },
             });
 
-            if (!response.ok) {
-                const error = new Error();
-                error.response = { status: response.status };
-                throw error;
+            let responseData;
+            try {
+                responseData = await response.json();
+            } catch {
+                responseData = { message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
             }
 
-            return await response.json();
+            if (!response.ok) {
+                const errorMessage = responseData.message || ERROR_CONFIG.getErrorMessage({ response: { status: response.status } });
+                throw new Error(errorMessage);
+            }
+
+            return responseData;
         } catch (error) {
-            const errorMessage = ERROR_CONFIG.getErrorMessage(error);
-            console.error("Error in retrieveDELETE:", errorMessage);
-            throw new Error(errorMessage);
+            console.error("Error in retrieveDELETE:", error.message);
+            throw error;
         }
     };
 

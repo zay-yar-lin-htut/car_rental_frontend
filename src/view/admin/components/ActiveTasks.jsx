@@ -20,6 +20,7 @@ import {
 import ReusableTable from "./ReusableTable";
 import TaskMap from "./TaskMap";
 import SignatureCanvas from "react-signature-canvas";
+import ConfirmDialog from "../../../common/ConfirmDialog";
 import { createDataServices } from "../../../services/DataServices";
 import { API_ENDPOINTS } from "../../../services/Configuration";
 import { useSnackbar } from "../../../contexts/ErrorMessage";
@@ -44,6 +45,9 @@ const ActiveTasks = () => {
 	const [costData, setCostData] = useState(null);
 	const sigCanvasRef = useRef(null);
 	const [isNoShow, setIsNoShow] = useState(false);
+
+	// State for Confirmation Dialog
+	const [openConfirm, setOpenConfirm] = useState(false);
 
 	const columns = [
 		{
@@ -237,42 +241,49 @@ const ActiveTasks = () => {
 				showSnackbar("Failed to get cost information. Please try again.", "error");
 			}
 		} else {
-			// For take_back, complete directly
-			try {
-				await dataService.retrieve(API_ENDPOINTS.staff.baseStaff, API_ENDPOINTS.staff.completeTakeBack(task.task_id));
-				// Remove the task from the list after completing
-				setTasks(tasks.filter(t => t.task_id !== task.task_id));
-		} catch (error) {
-			console.error("Failed to complete task:", error);
-			showSnackbar("Failed to complete the task. Please try again.", "error");
-		}
+			// For take_back, show confirmation dialog
+			setSelectedTaskForComplete(task);
+			setOpenConfirm(true);
 		}
 	};
 
 	const handleConfirmComplete = async () => {
-		if (!selectedTaskForComplete || !costData || sigCanvasRef.current?.isEmpty()) {
-			showSnackbar("Please provide your signature.", "warning");
-			return;
-		}
+		if (!selectedTaskForComplete) return;
 
 		try {
-			const totalAmount = costData.booking_cost + (costData.no_show_fine || 0) + (costData.cancellation_fine || 0);
-			await dataService.retrievePOST(
-				{
-					amount_paid: totalAmount,
-					fine_amount: (costData.no_show_fine || 0) + (costData.cancellation_fine || 0),
-				},
-				API_ENDPOINTS.staff.baseStaff + API_ENDPOINTS.staff.completeDelivery(selectedTaskForComplete.task_id)
-			);
-			// Remove the task from the list after completing
-			setTasks(tasks.filter(t => t.task_id !== selectedTaskForComplete.task_id));
-			setOpenCostDialog(false);
-			setSelectedTaskForComplete(null);
-			setCostData(null);
-			sigCanvasRef.current?.clear();
+			if (selectedTaskForComplete.task_type === "take_back") {
+				// Complete take_back task
+				await dataService.retrieve(API_ENDPOINTS.staff.baseStaff, API_ENDPOINTS.staff.completeTakeBack(selectedTaskForComplete.task_id));
+				// Remove the task from the list after completing
+				setTasks(tasks.filter(t => t.task_id !== selectedTaskForComplete.task_id));
+				setOpenConfirm(false);
+				setSelectedTaskForComplete(null);
+				showSnackbar("Take back task completed successfully!", "success");
+			} else {
+				// Delivery completion with cost
+				if (!costData || sigCanvasRef.current?.isEmpty()) {
+					showSnackbar("Please provide your signature.", "warning");
+					return;
+				}
+				const totalAmount = costData.booking_cost + (costData.no_show_fine || 0) + (costData.cancellation_fine || 0);
+				await dataService.retrievePOST(
+					{
+						amount_paid: totalAmount,
+						fine_amount: (costData.no_show_fine || 0) + (costData.cancellation_fine || 0),
+					},
+					API_ENDPOINTS.staff.baseStaff + API_ENDPOINTS.staff.completeDelivery(selectedTaskForComplete.task_id)
+				);
+				// Remove the task from the list after completing
+				setTasks(tasks.filter(t => t.task_id !== selectedTaskForComplete.task_id));
+				setOpenCostDialog(false);
+				setSelectedTaskForComplete(null);
+				setCostData(null);
+				sigCanvasRef.current?.clear();
+				showSnackbar("Delivery task completed successfully!", "success");
+			}
 		} catch (error) {
-			console.error("Failed to complete delivery:", error);
-			showSnackbar("Failed to complete the delivery. Please try again.", "error");
+			console.error("Failed to complete task:", error);
+			showSnackbar("Failed to complete the task. Please try again.", "error");
 		}
 	};
 
@@ -296,6 +307,11 @@ const ActiveTasks = () => {
 		setCostData(null);
 		setIsNoShow(false);
 		sigCanvasRef.current?.clear();
+	};
+
+	const handleCloseConfirm = () => {
+		setOpenConfirm(false);
+		setSelectedTaskForComplete(null);
 	};
 
 	return (
@@ -405,6 +421,17 @@ const ActiveTasks = () => {
 					</Button>
 				</DialogActions>
 			</Dialog>
+
+			{/* Confirmation Dialog */}
+			<ConfirmDialog
+				open={openConfirm}
+				onClose={handleCloseConfirm}
+				onConfirm={handleConfirmComplete}
+				title="Confirm Complete"
+				message={`Are you sure you want to complete this ${selectedTaskForComplete?.task_type === "take_back" ? "take back" : "delivery"} task (Task ID: ${selectedTaskForComplete?.task_id})?`}
+				confirmText="Complete"
+				cancelText="Cancel"
+			/>
 		</Box>
 	);
 };

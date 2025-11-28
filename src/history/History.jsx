@@ -50,6 +50,7 @@ const History = () => {
 	const [page, setPage] = useState(0);
 	const rowsPerPage = 10;
 	const [totalBookings, setTotalBookings] = useState(0);
+	const [offices, setOffices] = useState({});
 	const isLogin = AUTH_CONFIG.isAuthenticated();
 	const navLinks = useMemo(() => getNavLinks(isLogin), [isLogin]);
 
@@ -73,6 +74,19 @@ const History = () => {
 			return 'Unknown location';
 		}
 	};
+
+	const fetchOffices = useCallback(async () => {
+		try {
+			const response = await dataServices.retrieve(API_ENDPOINTS.location.base, API_ENDPOINTS.location.getOffice);
+			const officeMap = {};
+			response.data.forEach(office => {
+				officeMap[office.office_location_id] = office.location_name;
+			});
+			setOffices(officeMap);
+		} catch (_err) {
+			console.error('Error fetching offices:', _err);
+		}
+	}, [dataServices]);
 
 	const fetchBookings = useCallback(async () => {
 		try {
@@ -107,7 +121,8 @@ const History = () => {
 
 	useEffect(() => {
 		fetchBookings();
-	}, [fetchBookings]);
+		fetchOffices();
+	}, [fetchBookings, fetchOffices]);
 
 	const handleCancelClick = (booking) => {
 		setSelectedBooking(booking);
@@ -187,6 +202,10 @@ const History = () => {
 			hour: "numeric",
 			minute: "2-digit",
 		});
+	};
+
+	const getOfficeName = (id) => {
+		return offices[id] || "Unknown Office";
 	};
 
 
@@ -397,19 +416,58 @@ const History = () => {
 												</Typography>
 											</Box>
 
-											{/* Status + Ticket Number (under it) */}
+											{/* Status + Ticket Number + Delivery Info */}
 											<Box sx={{ textAlign: "right" }}>
-												<Chip
-													label={booking.booking_status.toUpperCase()}
-													color={getStatusColor(booking.booking_status)}
-													size='small'
-													sx={{
-														fontSize: "0.7rem",
-														height: 22,
-														fontWeight: 700,
-														mb: 0.5,
-													}}
-												/>
+												<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+													<Chip
+														label={booking.booking_status.toUpperCase()}
+														color={getStatusColor(booking.booking_status)}
+														size='small'
+														sx={{
+															fontSize: "0.7rem",
+															height: 22,
+															fontWeight: 700,
+														}}
+													/>
+													{(() => {
+														let message = '';
+														if (booking.booking_status === 'pending' || booking.booking_status === 'confirmed') {
+															if (booking.deliver_need === 1 && booking.delivery_office_id) {
+																message = `${getOfficeName(booking.delivery_office_id)} will deliver car at ${formatDateTime(booking.pickup_datetime)}`;
+															} else if (booking.deliver_need === 0) {
+																message = `You must pickup car at the pickup location at ${formatDateTime(booking.pickup_datetime)}`;
+															}
+														} else if (booking.booking_status === 'on_rent') {
+															if (booking.take_back_need === 1 && booking.takeback_office_id) {
+																message = `${getOfficeName(booking.takeback_office_id)} will take back car at ${formatDateTime(booking.dropoff_datetime)}`;
+															} else if (booking.take_back_need === 0) {
+																message = `You must dropoff car at the dropoff location at ${formatDateTime(booking.dropoff_datetime)}`;
+															}
+														}
+														if (message) {
+															return (
+																<Chip
+																	label={message}
+																	size='small'
+																	sx={{
+																		fontSize: "0.65rem",
+																		height: 22,
+																		fontWeight: 600,
+																		backgroundColor: '#e3f2fd',
+																		color: '#1976d2',
+																		border: '1px solid #1976d2',
+																		maxWidth: 400,
+																		'& .MuiChip-label': {
+																			whiteSpace: 'normal',
+																			lineHeight: 1.2,
+																		},
+																	}}
+																/>
+															);
+														}
+														return null;
+													})()}
+												</Box>
 												<Typography
 													variant='body1'
 													sx={{

@@ -149,36 +149,18 @@ const PickupDropoffManagement = () => {
 				);
 				showSnackbar("Task marked as No Show.", "info");
 			} else {
-				if (selectedTaskForComplete.type === "Pickup") {
-					// Pickup completion with cost
-					if (!costData || sigCanvasRef.current?.isEmpty()) {
-						showSnackbar("Please provide your signature.", "warning");
-						return;
-					}
-					const totalAmount = costData.booking_cost + (costData.no_show_fine || 0) + (costData.cancellation_fine || 0);
-					await dataService.retrievePOST(
-						{
-							booking_id: selectedTaskForComplete.booking_id,
-							amount_paid: totalAmount,
-							fine_amount: (costData.no_show_fine || 0) + (costData.cancellation_fine || 0),
-						},
-						API_ENDPOINTS.staff.baseStaff + API_ENDPOINTS.staff.completeSelfPickup
-					);
-				} else {
-					// Dropoff completion
-					await dataService.retrievePOST(
-						{ booking_id: selectedTaskForComplete.booking_id },
-						API_ENDPOINTS.staff.baseStaff + API_ENDPOINTS.staff.completeSelfDropoff
-					);
-				}
+				// Dropoff completion only (pickup is handled by cost dialog)
+				await dataService.retrievePOST(
+					{ booking_id: selectedTaskForComplete.booking_id },
+					API_ENDPOINTS.staff.baseStaff + API_ENDPOINTS.staff.completeSelfDropoff
+				);
+				showSnackbar("Dropoff task completed successfully!", "success");
 			}
 			// Remove the task from the list after action
 			setTasks(tasks.filter(t => t.booking_id !== selectedTaskForComplete.booking_id));
 			setOpenConfirm(false);
 			setSelectedTaskForComplete(null);
 			setIsNoShow(false);
-			setCostData(null);
-			sigCanvasRef.current?.clear();
 		} catch (error) {
 			console.error("Failed to complete task:", error);
 			showSnackbar("Failed to complete the task. Please try again.", "error");
@@ -196,6 +178,36 @@ const PickupDropoffManagement = () => {
 		setSelectedTaskForComplete(null);
 		setCostData(null);
 		sigCanvasRef.current?.clear();
+	};
+
+	const handleConfirmCostDialog = async () => {
+		if (!selectedTaskForComplete || !costData || sigCanvasRef.current?.isEmpty()) {
+			showSnackbar("Please provide your signature.", "warning");
+			return;
+		}
+
+		try {
+			const totalAmount = costData.booking_cost + (costData.no_show_fine || 0) + (costData.cancellation_fine || 0);
+			await dataService.retrievePOST(
+				{
+					booking_id: selectedTaskForComplete.booking_id,
+					amount_paid: totalAmount,
+					fine_amount: (costData.no_show_fine || 0) + (costData.cancellation_fine || 0),
+				},
+				API_ENDPOINTS.staff.baseStaff + API_ENDPOINTS.staff.completeSelfPickup
+			);
+			
+			// Remove the task from the list after action
+			setTasks(tasks.filter(t => t.booking_id !== selectedTaskForComplete.booking_id));
+			setOpenCostDialog(false);
+			setSelectedTaskForComplete(null);
+			setCostData(null);
+			sigCanvasRef.current?.clear();
+			showSnackbar("Pickup completed successfully!", "success");
+		} catch (error) {
+			console.error("Failed to complete pickup:", error);
+			showSnackbar("Failed to complete the pickup. Please try again.", "error");
+		}
 	};
 
 	const handleFilterChange = (event) => {
@@ -446,7 +458,7 @@ const PickupDropoffManagement = () => {
 				</DialogContent>
 				<DialogActions>
 					<Button onClick={handleCloseCostDialog}>Cancel</Button>
-					<Button onClick={handleConfirmComplete} variant="contained" color="primary">
+					<Button onClick={handleConfirmCostDialog} variant="contained" color="primary">
 						Confirm Payment Collected
 					</Button>
 				</DialogActions>

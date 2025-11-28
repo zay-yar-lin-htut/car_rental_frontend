@@ -16,6 +16,12 @@ import {
 	Stack,
 	Alert,
 	useTheme,
+	Checkbox,
+	FormControlLabel,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	DialogActions,
 } from "@mui/material";
 import { createDataServices } from "../../services/DataServices";
 import { API_ENDPOINTS, AUTH_CONFIG } from "../../services/Configuration";
@@ -36,6 +42,8 @@ const Review = ({ onBackToSelect }) => {
 	const theme = useTheme();
 	const { showSnackbar } = useSnackbar();
 	const [isConfirming, setIsConfirming] = useState(false);
+	const [agreeTerms, setAgreeTerms] = useState(false);
+	const [termsDialogOpen, setTermsDialogOpen] = useState(false);
 
 	const navigate = useNavigate();
 	const dataServices = useMemo(() => createDataServices(), []);
@@ -312,6 +320,35 @@ const Review = ({ onBackToSelect }) => {
 						</Stack>
 					</Paper>
 
+					{/* Terms and Conditions */}
+					<Paper elevation={3} sx={{ p: { xs: 3, md: 4 }, borderRadius: 3 }}>
+						<FormControlLabel
+							control={
+								<Checkbox
+									checked={agreeTerms}
+									onChange={(e) => setAgreeTerms(e.target.checked)}
+									color="primary"
+								/>
+							}
+							label={
+								<Typography variant="body2">
+									I agree to the{" "}
+									<Typography
+										component="span"
+										sx={{
+											color: "primary.main",
+											textDecoration: "underline",
+											cursor: "pointer"
+										}}
+										onClick={() => setTermsDialogOpen(true)}
+									>
+										Rules and Policy
+									</Typography>
+								</Typography>
+							}
+						/>
+					</Paper>
+
 					{/* Action Buttons */}
 					<Box display="flex" gap={2} justifyContent="flex-end" flexWrap="wrap">
 						<Button
@@ -319,7 +356,7 @@ const Review = ({ onBackToSelect }) => {
 							size="large"
 							color="primary"
 							onClick={handleConfirmBooking}
-							disabled={isConfirming}
+							disabled={isConfirming || !agreeTerms}
 							sx={{
 								minWidth: 200,
 								py: 1.5,
@@ -336,6 +373,125 @@ const Review = ({ onBackToSelect }) => {
 					</Box>
 				</Stack>
 			</BookingLayout>
+
+			{/* Terms and Conditions Dialog */}
+			<Dialog
+				open={termsDialogOpen}
+				onClose={() => setTermsDialogOpen(false)}
+				maxWidth="md"
+				fullWidth
+			>
+				<DialogTitle sx={{ fontWeight: "bold", textAlign: "center" }}>
+					Rules and Policy
+				</DialogTitle>
+				<DialogContent>
+					<Stack spacing={2}>
+						<Typography variant="h6" fontWeight="bold" textAlign="center" color="primary">
+							🏢 CAR RENTAL SERVICE POLICIES
+						</Typography>
+
+						<Typography variant="h6" fontWeight="bold">
+							1. LOCATION RULES
+						</Typography>
+						<Typography variant="body2">
+							• Within 1 km of the office: Customer must self-pickup and self-drop-off (FREE)
+						</Typography>
+						<Typography variant="body2">
+							• 1 km to service area boundary: FREE delivery & take-back service (auto-confirmed when booking)
+						</Typography>
+						<Typography variant="body2">
+							• Outside service area: Booking not allowed
+						</Typography>
+
+						<Typography variant="body2" fontWeight="bold" sx={{ mt: 1 }}>
+							📞 Manual Request (for locations within 1 km)
+						</Typography>
+						<Typography variant="body2">
+							Users can request delivery/take-back by calling the office phone number.
+						</Typography>
+						<Typography variant="body2" fontWeight="bold">
+							User MUST provide the TICKET NUMBER when calling.
+						</Typography>
+
+						<Typography variant="h6" fontWeight="bold">
+							2. CANCELLATION POLICY
+						</Typography>
+						<Typography variant="body2">
+							• Cancellation before confirmation: 0 MMK (Free)
+						</Typography>
+						<Typography variant="body2">
+							• Cancellation after confirmation: 3,000 MMK fee
+						</Typography>
+
+						<Typography variant="h6" fontWeight="bold">
+							3. AUTO-CONFIRMATION
+						</Typography>
+						<Typography variant="body2">
+							Bookings will be automatically confirmed when:
+						</Typography>
+						<Typography variant="body2" sx={{ ml: 2 }}>
+							a) Less than 24 hours remain until pickup time, OR
+						</Typography>
+						<Typography variant="body2" sx={{ ml: 2 }}>
+							b) 24 hours have passed since the booking was created
+						</Typography>
+						<Typography variant="body2" sx={{ mt: 1 }}>
+							For locations 1 km+ from office → delivery/take-back service is auto-confirmed (FREE)
+						</Typography>
+
+						<Typography variant="h6" fontWeight="bold">
+							4. NO-SHOW POLICY
+						</Typography>
+						<Typography variant="body2">
+							If customer does not arrive within 30 minutes of the scheduled pickup time:
+						</Typography>
+						<Typography variant="body2" sx={{ ml: 2 }}>
+							→ No-show fee: 10,000 MMK
+						</Typography>
+
+						<Divider sx={{ my: 2 }} />
+
+						<Typography variant="h6" fontWeight="bold" textAlign="center">
+							💰 FEE SUMMARY
+						</Typography>
+						<Typography variant="body2">
+							Cancellation fee: 3,000 MMK
+						</Typography>
+						<Typography variant="body2">
+							No-show fee: 10,000 MMK
+						</Typography>
+						<Typography variant="body2">
+							Delivery (1 km to boundary): FREE
+						</Typography>
+						<Typography variant="body2">
+							Self-pickup (&lt;1 km): FREE
+						</Typography>
+
+						<Divider sx={{ my: 2 }} />
+
+						<Typography variant="h6" fontWeight="bold" textAlign="center" color="error">
+							🎫 TICKET NUMBER – FINAL WARNING
+						</Typography>
+						<Typography variant="body2">
+							• Please carefully keep your TICKET NUMBER safe
+						</Typography>
+						<Typography variant="body2">
+							• You can see the ticket number in the Booking History page after confirmation
+						</Typography>
+						<Typography variant="body2">
+							• Ticket number is required for delivery requests, cancellations, and all support calls
+						</Typography>
+						<Typography variant="body2" fontWeight="bold">
+							• Lost ticket number = delayed service
+						</Typography>
+					</Stack>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setTermsDialogOpen(false)} variant="contained">
+						Close
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</Box>
 	);
 };

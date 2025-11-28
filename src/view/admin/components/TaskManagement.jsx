@@ -128,16 +128,34 @@ const TaskManagement = () => {
     checkHasTasks();
   }, [checkHasTasks]);
 
-  useEffect(() => {
-    const offices = [
-      { id: 2, location_name: 'Yangon' },
-      { id: 1, location_name: 'Mandalay' }
-    ];
-    setOfficeLocations(offices);
-    if (!officeFilter) {
-      setOfficeFilter(offices[0].id);
-    }
-  }, [officeFilter]);
+useEffect(() => {
+    const fetchOfficeLocations = async () => {
+      try {
+        const response = await dataService.retrieve(
+          API_ENDPOINTS.location.base,
+          API_ENDPOINTS.location.getOffice
+        );
+        const locations = response.data || [];
+        setOfficeLocations(locations);
+        if (!officeFilter && locations.length > 0) {
+          setOfficeFilter(locations[0].office_location_id);
+        }
+      } catch (error) {
+        console.error("Failed to fetch office locations:", error);
+        // Fallback to hardcoded locations if API fails
+        const fallbackOffices = [
+          { office_location_id: 2, location_name: 'Yangon' },
+          { office_location_id: 1, location_name: 'Mandalay' }
+        ];
+        setOfficeLocations(fallbackOffices);
+        if (!officeFilter) {
+          setOfficeFilter(fallbackOffices[0].office_location_id);
+        }
+      }
+    };
+
+    fetchOfficeLocations();
+  }, [officeFilter, dataService]);
 
   // View Details Dialog
   const handleOpenViewDialog = (task) => {
@@ -314,7 +332,7 @@ const TaskManagement = () => {
   return (
     <Paper sx={{ p: 3, bgcolor: "var(--background-paper)", color: "var(--text-color)" }}>
       <Typography variant="h4" marginBottom={3} gutterBottom>
-        Delivery & Takeback
+        Delivery & Takeback Management
       </Typography>
 
       {/* Filters */}
@@ -343,13 +361,13 @@ const TaskManagement = () => {
             label="Office Location"
             disabled={officeLocations.length === 0}
           >
-            {officeLocations.length === 0 ? (
+{officeLocations.length === 0 ? (
               <MenuItem disabled>
                 <em>Loading offices...</em>
               </MenuItem>
             ) : (
               officeLocations.map((office) => (
-                <MenuItem key={office.id} value={office.id}>
+                <MenuItem key={office.office_location_id} value={office.office_location_id}>
                   {office.location_name}
                 </MenuItem>
               ))

@@ -58,7 +58,7 @@ const StaffLayout = () => {
 
 	const staffNavItems = [
 		{
-			text: "Task Management",
+			text: "Delivery & Takeback",
 			to: "/staff/task-management",
 			icon: <AssignmentIcon />,
 		},

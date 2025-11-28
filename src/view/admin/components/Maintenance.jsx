@@ -39,6 +39,17 @@ const Maintenance = () => {
 		description: "",
 		cost: "",
 	});
+	const [errors, setErrors] = useState({});
+
+	const validateForm = () => {
+		const newErrors = {};
+		if (!selectedCar) newErrors.car = "Please select a car";
+		if (!newMaintenance.description?.trim()) newErrors.description = "Description is required";
+		if (!newMaintenance.cost?.trim()) newErrors.cost = "Cost is required";
+		else if (isNaN(parseFloat(newMaintenance.cost)) || parseFloat(newMaintenance.cost) <= 0) newErrors.cost = "Cost must be a positive number";
+		setErrors(newErrors);
+		return Object.keys(newErrors).length === 0;
+	};
 
 	const carColumns = useMemo(
 		() => [
@@ -159,6 +170,7 @@ const Maintenance = () => {
 	const handleOpenDialog = () => {
 		setOpenDialog(true);
 		setSelectedCar(null);
+		setErrors({});
 	};
 
 	const handleCloseDialog = () => {
@@ -183,13 +195,11 @@ const Maintenance = () => {
 		setSelectedCar(car);
 		setOpenCarDialog(false);
 		setCarSearchTerm("");
+		if (errors.car) setErrors(prev => ({ ...prev, car: null }));
 	};
 
 	const handleCreateMaintenance = async () => {
-		if (!selectedCar || !newMaintenance.description || !newMaintenance.cost) {
-			showSnackbar("Please fill in all fields.", "error");
-			return;
-		}
+		if (!validateForm()) return;
 		try {
 			await dataService.retrievePOST(
 				{
@@ -370,6 +380,11 @@ const Maintenance = () => {
 						>
 							Select Car
 						</Button>
+						{errors.car && (
+							<Typography variant="body2" color="error" sx={{ mt: 1 }}>
+								{errors.car}
+							</Typography>
+						)}
 					</Box>
 					<TextField
 						label="Description"
@@ -378,7 +393,12 @@ const Maintenance = () => {
 						multiline
 						rows={3}
 						value={newMaintenance.description}
-						onChange={(e) => setNewMaintenance({ ...newMaintenance, description: e.target.value })}
+						onChange={(e) => {
+							setNewMaintenance({ ...newMaintenance, description: e.target.value });
+							if (errors.description) setErrors(prev => ({ ...prev, description: null }));
+						}}
+						error={!!errors.description}
+						helperText={errors.description}
 						sx={{ mt: 2 }}
 					/>
 					<TextField
@@ -387,7 +407,12 @@ const Maintenance = () => {
 						fullWidth
 						type="number"
 						value={newMaintenance.cost}
-						onChange={(e) => setNewMaintenance({ ...newMaintenance, cost: e.target.value })}
+						onChange={(e) => {
+							setNewMaintenance({ ...newMaintenance, cost: e.target.value });
+							if (errors.cost) setErrors(prev => ({ ...prev, cost: null }));
+						}}
+						error={!!errors.cost}
+						helperText={errors.cost}
 						sx={{ mt: 2 }}
 					/>
 				</DialogContent>

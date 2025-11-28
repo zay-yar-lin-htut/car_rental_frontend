@@ -15,6 +15,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import VideoBackground1 from "../../common/Background1";
 import { useNavigate } from "react-router";
 import { useIntroForm } from "../../../contexts/IntroFormProvider";
+import { useUserRole } from "../../../contexts/userRoleContext";
 import dayjs from "dayjs";
 import { createDataServices } from "../../../services/DataServices";
 import { useSnackbar } from "../../../contexts/ErrorMessage";
@@ -88,6 +89,7 @@ const IntroSection = () => {
 	const dataServices = createDataServices();
 	const { showSnackbar } = useSnackbar();
 	const navigate = useNavigate();
+	const { role } = useUserRole();
 	const [locations, setLocations] = React.useState([]);
 	const [openDialog, setOpenDialog] = React.useState(false);
 	const [editingMode, setEditingMode] = React.useState("pickup");
@@ -331,6 +333,10 @@ const IntroSection = () => {
 								label='Select Pickup Location'
 								value={formValues.pickupLocation}
 								onClick={() => {
+									if (!role) {
+										navigate("/login");
+										return;
+									}
 									setEditingMode("pickup");
 									setOpenDialog(true);
 									if (!expanded) setExpanded(true);

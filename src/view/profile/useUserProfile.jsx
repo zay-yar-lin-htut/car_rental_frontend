@@ -69,21 +69,6 @@ export const useUserProfile = () => {
 			if (isSaving) return;
 			setIsSaving(true);
 
-			const previousUser = user;
-
-			// Prepare optimistic data. For the UI, we can use the blob URL for an
-			// instant preview of the new avatar on the main profile page.
-			const optimisticUser = { ...user, ...formData };
-			if (selectedFile) {
-				optimisticUser.profile_image_url = URL.createObjectURL(selectedFile);
-			}
-
-			// Close dialog & apply optimistic update
-			handleCloseDialog();
-			setUser(optimisticUser);
-			// Update localStorage, but without the temporary blob URL
-			AUTH_CONFIG.setUserData({ ...user, ...formData });
-
 			try {
 				setIsUpload(true);
 				let finalProfileData = { ...formData };
@@ -96,6 +81,11 @@ export const useUserProfile = () => {
 						imageFormData,
 						API_ENDPOINTS.users.uploadImage
 					);
+
+					if (!imageResponse.success) {
+						return { success: false, message: imageResponse.message || "Failed to upload image" };
+					}
+
 					finalProfileData.profile_image_url = imageResponse.data.avatar_url;
 				}
 
@@ -104,32 +94,24 @@ export const useUserProfile = () => {
 					API_ENDPOINTS.users.updateProfile
 				);
 
-				// On success, clean up the temporary blob URL if it exists
-				if (optimisticUser.profile_image_url.startsWith("blob:")) {
-					URL.revokeObjectURL(optimisticUser.profile_image_url);
+				if (!response.success) {
+					return { success: false, message: response.message || "Failed to update profile" };
 				}
 
+				// On success
 				setUser(response.data);
 				AUTH_CONFIG.setUserData(response.data);
+				handleCloseDialog();
 				showSnackbar("Profile updated successfully!", "success");
+				return { success: true };
 			} catch (err) {
-				// On failure, revert UI and show error
-				if (optimisticUser.profile_image_url.startsWith("blob:")) {
-					URL.revokeObjectURL(optimisticUser.profile_image_url);
-				}
-				setUser(previousUser);
-				AUTH_CONFIG.setUserData(previousUser);
-				showSnackbar(
-					err.message ||
-						"Failed to update profile. Changes have been reverted.",
-					"error"
-				);
+				return { success: false, message: err.message || "Failed to update profile." };
 			} finally {
 				setIsSaving(false);
 				setIsUpload(false);
 			}
 		},
-		[isSaving, user, handleCloseDialog, showSnackbar]
+		[isSaving, handleCloseDialog, showSnackbar]
 	);
 
 	return {
