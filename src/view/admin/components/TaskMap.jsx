@@ -3,6 +3,258 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet-routing-machine";
 
+// Custom TomTom Router
+L.Routing = L.Routing || {};
+L.Routing.TomTom = L.Class.extend({
+    options: {
+        serviceUrl: "https://api.tomtom.com/routing/1/calculateRoute",
+        timeout: 30 * 1000,
+        routeType: "fastest",
+        language: "",
+        instructionsType: "",
+        traffic: true,
+        avoid: "",
+        travelMode: "car",
+        vehicleMaxSpeed: 0,
+        vehicleWeight: 0,
+        vehicleAxleWeight: 0,
+        vehicleLength: 0,
+        vehicleWidth: 0,
+        vehicleHeight: 0,
+        departAt: "",
+        arriveAt: "",
+        vehicleCommercial: false
+    },
+
+    initialize: function(apiKey, options) {
+        this._apiKey = apiKey;
+        L.Util.setOptions(this, options);
+    },
+
+    route: function(waypoints, callback, context, opts) {
+        var timedOut = false,
+            wps = [],
+            url,
+            timer,
+            wp,
+            i;
+
+        opts = opts || {};
+        url = this.buildRouteUrl(waypoints, opts);
+
+        timer = setTimeout(function() {
+                            timedOut = true;
+                            callback.call(context || callback, {
+                                status: -1,
+                                message: 'TomTom request timed out.'
+                            });
+                        }, this.options.timeout);
+
+        for (i = 0; i < waypoints.length; i++) {
+            wp = waypoints[i];
+            wps.push({
+                latLng: wp.latLng,
+                name: wp.name,
+                options: wp.options
+            });
+        }
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                clearTimeout(timer);
+                if (!timedOut) {
+                    this._routeDone(data, wps, callback, context);
+                }
+            })
+            .catch(err => {
+                clearTimeout(timer);
+                if (!timedOut) {
+                    callback.call(context || callback, {
+                        status: -1,
+                        message: 'HTTP request failed: ' + err.message
+                    });
+                }
+            });
+
+        return this;
+    },
+
+    _routeDone: function(response, inputWaypoints, callback, context) {
+        var alts = [],
+            mappedWaypoints,
+            coordinates = [],
+            i,
+            path,
+            summary = [],
+            instructions,
+            index = 0;
+
+        context = context || callback;
+        if (response.error && response.error.description) {
+            callback.call(context, {
+                status: -1,
+                message: response.error.description
+            });
+            return;
+        }
+
+        for (i = 0; i < response.routes[0].legs.length; i++) {
+            path = response.routes[0].legs[i];
+            coordinates = coordinates.concat(this._decodePolyline(path.points));
+            index += (path.points.length - 1);
+            summary.push({ summary: path.summary, index: index });
+        }
+
+        instructions = this._convertInstructions(summary);
+        mappedWaypoints = this._mapWaypointIndices(inputWaypoints, instructions, coordinates);
+
+        alts = [{
+            name: '',
+            coordinates: coordinates,
+            instructions: instructions,
+            summary: this._convertSummary(summary),
+            inputWaypoints: inputWaypoints,
+            actualWaypoints: mappedWaypoints.waypoints,
+            waypointIndices: mappedWaypoints.waypointIndices
+        }];
+
+        callback.call(context, null, alts);
+    },
+
+    _decodePolyline: function(geometry) {
+        var coords = geometry,
+            latlngs = new Array(coords.length),
+            i;
+
+        for (i = 0; i < coords.length; i++) {
+            latlngs[i] = new L.LatLng(coords[i].latitude, coords[i].longitude);
+        }
+
+        return latlngs;
+    },
+
+    _toWaypoints: function(inputWaypoints, vias) {
+        var wps = [],
+            i;
+        for (i = 0; i < vias.length; i++) {
+            wps.push({
+                latLng: L.latLng(vias[i]),
+                name: inputWaypoints[i].name,
+                options: inputWaypoints[i].options
+            });
+        }
+
+        return wps;
+    },
+
+    buildRouteUrl: function(waypoints, options) {
+        var locs = [],
+            i,
+            url = "",
+            _options = {
+                        routeType: this.options.routeType,
+                        language: this.options.language,
+                        instructionsType: this.options.instructionsType,
+                        traffic: this.options.traffic,
+                        avoid: this.options.avoid,
+                        travelMode: this.options.travelMode,
+                        vehicleMaxSpeed: this.options.vehicleMaxSpeed,
+                        vehicleWeight: this.options.vehicleWeight,
+                        vehicleAxleWeight: this.options.vehicleAxleWeight,
+                        vehicleLength: this.options.vehicleLength,
+                        vehicleWidth: this.options.vehicleWidth,
+                        vehicleHeight: this.options.vehicleHeight,
+                        vehicleCommercial: this.options.vehicleCommercial
+                };
+
+        if (_options.avoid == "" || _options.avoid == [])
+            delete _options.avoid;
+
+        if (_options.instructionsType == "")
+            delete _options.instructionsType;
+
+        if (_options.language == "")
+            delete _options.language;
+
+        if (this.options.departAt && this.options.departAt.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/))
+            _options.departAt = this.options.departAt;
+        else if (this.options.arriveAt && this.options.arriveAt.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/))
+            _options.arriveAt = this.options.arriveAt;
+
+        for (i = 0; i < waypoints.length; i++)
+            locs.push(waypoints[i].latLng.lat + ',' + waypoints[i].latLng.lng);
+
+        return this.options.serviceUrl + '/' + locs.join(':') + '/json?key=' +
+                this._apiKey + '&' + Object.keys(_options).map(function(k) {
+                    return encodeURIComponent(k) + '=' + encodeURIComponent(_options[k])
+                }).join('&');
+    },
+
+    _convertInstructions: function(summaries) {
+        var result = [],
+            i;
+
+        for (i = 0; i < summaries.length; i++) {
+            result.push({ distance: summaries[i].summary.lengthInMeters,
+                          time: summaries[i].summary.travelTimeInSeconds,
+                          type: (i == summaries.length - 1 ? "DestinationReached" : "WaypointReached"),
+                          index: summaries[i].index });
+        }
+
+        return result;
+    },
+
+    _convertSummary: function(summaries) {
+        var result = { totalDistance: 0,
+                       totalTime: 0 },
+            i;
+
+        for (i = 0; i < summaries.length; i++) {
+            result.totalDistance += summaries[i].summary.lengthInMeters;
+            result.totalTime += summaries[i].summary.travelTimeInSeconds;
+        }
+
+        return result;
+    },
+
+    _mapWaypointIndices: function(waypoints, instructions, coordinates) {
+        var wps = [],
+            wpIndices = [],
+            i,
+            idx;
+
+        wpIndices.push(0);
+        wps.push({ latLng: coordinates[0], name: waypoints[0].name });
+
+        for (i = 0; i < instructions.length; i++) {
+            if (instructions[i].type === "WaypointReached") {
+                idx = instructions[i].index;
+                wpIndices.push(idx);
+                wps.push({
+                    latLng: coordinates[idx],
+                    name: waypoints[wps.length].name
+                });
+            }
+        }
+
+        wpIndices.push(coordinates.length - 1);
+        wps.push({
+            latLng: coordinates[coordinates.length - 1],
+            name: waypoints[waypoints.length - 1].name
+        });
+
+        return {
+            waypointIndices: wpIndices,
+            waypoints: wps
+        };
+    }
+});
+
+L.Routing.tomTom = function(apiKey, options) {
+    return new L.Routing.TomTom(apiKey, options);
+};
+
 const RoutingMachine = ({ start, end, type }) => {
 	const map = useMap();
 
@@ -11,6 +263,7 @@ const RoutingMachine = ({ start, end, type }) => {
 
 		const routingControl = L.Routing.control({
 			waypoints: [L.latLng(start.lat, start.lng), L.latLng(end.lat, end.lng)],
+			router: new L.Routing.TomTom(import.meta.env.VITE_TOMTOM_KEY),
 			routeWhileDragging: true,
 			show: false, // Set to true to show the itinerary panel
 			addWaypoints: false,
@@ -24,7 +277,7 @@ const RoutingMachine = ({ start, end, type }) => {
 				],
 			},
 			// Use custom icons
-			createMarker: function (i, waypoint, n) {
+            createMarker: function (i, waypoint) {
 				const isStart = i === 0;
 				const markerIcon = L.divIcon({
 					html: `<div class="map-marker-pin ${
