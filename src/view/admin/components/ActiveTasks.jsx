@@ -291,7 +291,7 @@ const ActiveTasks = () => {
 		try {
 			await dataService.retrievePOST(
 				{ booking_id: task.booking_id },
-				API_ENDPOINTS.staff.baseStaff + API_ENDPOINTS.staff.noshowPickup
+				API_ENDPOINTS.staff.baseStaff + API_ENDPOINTS.staff.noshowDelivery
 			);
 			showSnackbar("Task marked as No Show.", "info");
 			setTasks(tasks.filter(t => t.task_id !== task.task_id));
