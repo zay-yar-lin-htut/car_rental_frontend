@@ -74,7 +74,8 @@ const Register = () => {
 		if (!form.password) newErrors.password = "Password is required";
 		else if (form.password.length < 8)
 			newErrors.password = "Password must be at least 8 characters";
-		if (form.password !== form.confirmPassword)
+		if (!form.confirmPassword) newErrors.confirmPassword = "Confirm Password is required";
+		else if (form.password !== form.confirmPassword)
 			newErrors.confirmPassword = "Passwords do not match";
 		if (!form.agreeTerms)
 			newErrors.agreeTerms = "You must agree to the terms and conditions";
