@@ -1,2 +1,1 @@
-export const BaseUrl = "https://car-rental-web-xs37.onrender.com"
-// export const BaseUrl = "http://127.0.0.1:8000";
+export const BaseUrl = import.meta.env.VITE_API_BASE_URL || "https://car-rental-web-xs37.onrender.com"

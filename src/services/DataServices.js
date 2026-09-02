@@ -10,7 +10,6 @@ import {
 export const createDataServices = () => {
 
     const Login = async (data, serviceName) => {
-        console.log(BaseUrl + serviceName);
         try {
             const response = await fetch(BaseUrl + serviceName, {
                 method: "POST",
@@ -21,7 +20,6 @@ export const createDataServices = () => {
                 },
                 body: JSON.stringify(data),
             });
-            console.log("data", JSON.stringify(data));
 
             if (!response.ok) {
                 const error = new Error();
@@ -37,7 +35,6 @@ export const createDataServices = () => {
         }
     }
     const Register = async (data, serviceName) => {
-        console.log(BaseUrl + serviceName);
         try {
             const response = await fetch(BaseUrl + serviceName, {
                 method: "POST",
@@ -46,7 +43,6 @@ export const createDataServices = () => {
                 },
                 body: JSON.stringify(data),
             });
-            console.log("data", JSON.stringify(data));
 
             let responseData;
             try {
@@ -68,7 +64,6 @@ export const createDataServices = () => {
     };
 
     const Logout = async (serviceName) => {
-        console.log(BaseUrl + serviceName);
         try {
             const response = await fetch(BaseUrl + serviceName, {
                 method: "GET",
@@ -93,7 +88,6 @@ export const createDataServices = () => {
     };
 
     const retrievePOST = async (data, serviceName) => {
-        console.log(BaseUrl + serviceName);
         try {
             const response = await fetch(BaseUrl + serviceName, {
                 method: "POST",
@@ -103,7 +97,6 @@ export const createDataServices = () => {
                 },
                 body: JSON.stringify(data),
             });
-            console.log("data", JSON.stringify(data));
 
             let responseData;
             try {
@@ -125,7 +118,6 @@ export const createDataServices = () => {
     };
 
     const retrieve = async (serviceName, serviceAction) => {
-        console.log(BaseUrl + serviceName + serviceAction);
         try {
             const response = await fetch(BaseUrl + serviceName + serviceAction, {
                 method: "GET",
@@ -160,7 +152,6 @@ export const createDataServices = () => {
     };
 
     const retrievePOSTFormData = async (data, serviceName) => {
-        console.log(BaseUrl + serviceName);
         try {
             const response = await fetch(BaseUrl + serviceName, {
                 method: "POST",
@@ -190,8 +181,6 @@ export const createDataServices = () => {
     };
 
     const retrievePUT = async (data, serviceName) => {
-        console.log(BaseUrl + serviceName);
-        console.log(JSON.stringify(data));
         try {
             const response = await fetch(BaseUrl + serviceName, {
                 method: "PUT",
@@ -222,7 +211,6 @@ export const createDataServices = () => {
     };
 
     const retrieveDELETE = async (serviceName, serviceAction) => {
-        console.log(BaseUrl + serviceName + serviceAction);
         try {
             const response = await fetch(BaseUrl + serviceName + serviceAction, {
                 method: "DELETE",
