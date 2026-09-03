@@ -3,12 +3,13 @@ import {
     AUTH_CONFIG,
     ERROR_CONFIG,
 } from './Configuration';
+import type { ApiResponse, AuthResponse } from '../types';
 
-type JsonObject = Record<string, unknown> & { message?: string };
+type JsonResponse<T = unknown> = ApiResponse<T> & Record<string, unknown>;
 
 export const createDataServices = () => {
 
-    const Login = async (data: unknown, serviceName: string): Promise<unknown> => {
+    const Login = async (data: unknown, serviceName: string): Promise<AuthResponse> => {
         try {
             const response = await fetch(BaseUrl + serviceName, {
                 method: "POST",
@@ -25,7 +26,7 @@ export const createDataServices = () => {
                 throw error;
             }
 
-            return await response.json();
+            return await response.json() as AuthResponse;
         } catch (error) {
             const errorMessage = ERROR_CONFIG.getErrorMessage(error as { response?: { status?: number }; message?: string });
             console.error("Error in Login:", errorMessage);
@@ -33,7 +34,7 @@ export const createDataServices = () => {
         }
     }
 
-    const Register = async (data: unknown, serviceName: string): Promise<unknown> => {
+    const Register = async <T = unknown>(data: unknown, serviceName: string): Promise<JsonResponse<T>> => {
         try {
             const response = await fetch(BaseUrl + serviceName, {
                 method: "POST",
@@ -43,11 +44,11 @@ export const createDataServices = () => {
                 body: JSON.stringify(data),
             });
 
-            let responseData: JsonObject = {};
+            let responseData: JsonResponse<T> = { success: false };
             try {
                 responseData = await response.json();
             } catch {
-                responseData = { message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
+                responseData = { success: false, message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
             }
 
             if (!response.ok) {
@@ -62,7 +63,7 @@ export const createDataServices = () => {
         }
     };
 
-    const Logout = async (serviceName: string): Promise<unknown> => {
+    const Logout = async <T = unknown>(serviceName: string): Promise<JsonResponse<T>> => {
         try {
             const response = await fetch(BaseUrl + serviceName, {
                 method: "GET",
@@ -78,7 +79,7 @@ export const createDataServices = () => {
                 throw error;
             }
 
-            return await response.json();
+            return await response.json() as JsonResponse<T>;
         } catch (error) {
             const errorMessage = ERROR_CONFIG.getErrorMessage(error as { response?: { status?: number }; message?: string });
             console.error("Error in Logout:", errorMessage);
@@ -86,7 +87,7 @@ export const createDataServices = () => {
         }
     };
 
-    const retrievePOST = async (data: unknown, serviceName: string): Promise<JsonObject> => {
+    const retrievePOST = async <T = unknown>(data: unknown, serviceName: string): Promise<JsonResponse<T>> => {
         try {
             const response = await fetch(BaseUrl + serviceName, {
                 method: "POST",
@@ -97,11 +98,11 @@ export const createDataServices = () => {
                 body: JSON.stringify(data),
             });
 
-            let responseData: JsonObject = {};
+            let responseData: JsonResponse<T> = { success: false };
             try {
                 responseData = await response.json();
             } catch {
-                responseData = { message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
+                responseData = { success: false, message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
             }
 
             if (!response.ok) {
@@ -116,7 +117,7 @@ export const createDataServices = () => {
         }
     };
 
-    const retrieve = async (serviceName: string, serviceAction: string = ""): Promise<JsonObject> => {
+    const retrieve = async <T = unknown>(serviceName: string, serviceAction: string = ""): Promise<JsonResponse<T>> => {
         try {
             const response = await fetch(BaseUrl + serviceName + serviceAction, {
                 method: "GET",
@@ -126,11 +127,11 @@ export const createDataServices = () => {
                 },
             });
 
-            let responseData: JsonObject = {};
+            let responseData: JsonResponse<T> = { success: false };
             try {
                 responseData = await response.json();
             } catch {
-                responseData = { message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
+                responseData = { success: false, message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
             }
 
             if (!response.ok) {
@@ -150,7 +151,7 @@ export const createDataServices = () => {
         return imageUrl;
     };
 
-    const retrievePOSTFormData = async (data: FormData, serviceName: string): Promise<JsonObject> => {
+    const retrievePOSTFormData = async <T = unknown>(data: FormData, serviceName: string): Promise<JsonResponse<T>> => {
         try {
             const response = await fetch(BaseUrl + serviceName, {
                 method: "POST",
@@ -160,11 +161,11 @@ export const createDataServices = () => {
                 body: data,
             });
 
-            let responseData: JsonObject = {};
+            let responseData: JsonResponse<T> = { success: false };
             try {
                 responseData = await response.json();
             } catch {
-                responseData = { message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
+                responseData = { success: false, message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
             }
 
             if (!response.ok) {
@@ -179,7 +180,7 @@ export const createDataServices = () => {
         }
     };
 
-    const retrievePUT = async (data: unknown, serviceName: string): Promise<JsonObject> => {
+    const retrievePUT = async <T = unknown>(data: unknown, serviceName: string): Promise<JsonResponse<T>> => {
         try {
             const response = await fetch(BaseUrl + serviceName, {
                 method: "PUT",
@@ -190,11 +191,11 @@ export const createDataServices = () => {
                 body: JSON.stringify(data),
             });
 
-            let responseData: JsonObject = {};
+            let responseData: JsonResponse<T> = { success: false };
             try {
                 responseData = await response.json();
             } catch {
-                responseData = { message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
+                responseData = { success: false, message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
             }
 
             if (!response.ok) {
@@ -209,7 +210,7 @@ export const createDataServices = () => {
         }
     };
 
-    const retrieveDELETE = async (serviceName: string, serviceAction: string = ""): Promise<JsonObject> => {
+    const retrieveDELETE = async <T = unknown>(serviceName: string, serviceAction: string = ""): Promise<JsonResponse<T>> => {
         try {
             const response = await fetch(BaseUrl + serviceName + serviceAction, {
                 method: "DELETE",
@@ -219,11 +220,11 @@ export const createDataServices = () => {
                 },
             });
 
-            let responseData: JsonObject = {};
+            let responseData: JsonResponse<T> = { success: false };
             try {
                 responseData = await response.json();
             } catch {
-                responseData = { message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
+                responseData = { success: false, message: await response.text() || ERROR_CONFIG.defaultErrorMessages.unknown };
             }
 
             if (!response.ok) {

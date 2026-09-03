@@ -70,7 +70,7 @@ const AdminPanel = () => {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const { showSnackbar } = useSnackbar();
-    const currentUser = useMemo(() => AUTH_CONFIG.getUserData(), []);
+    const currentUser = useMemo(() => AUTH_CONFIG.getUserData<User>(), []);
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -245,8 +245,7 @@ const AdminPanel = () => {
                                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                 .map((user, index) => {
                                     const role = getRoleProps(user.user_type_id);
-                                    const isCurrentUser =
-                                        currentUser && currentUser.id === user.user_id;
+                                    const isCurrentUser = currentUser?.user_id === user.user_id;
                                     return (
                                         <TableRow
                                             hover

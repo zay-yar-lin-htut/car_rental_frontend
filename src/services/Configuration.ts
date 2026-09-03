@@ -65,9 +65,16 @@ export const AUTH_CONFIG = {
     },
 
     // Get user data from storage
-    getUserData: () => {
+    getUserData: <T = unknown>(): T | null => {
         const userData = localStorage.getItem(AUTH_CONFIG.userDataKey) || sessionStorage.getItem(AUTH_CONFIG.userDataKey);
-        return userData ? JSON.parse(userData) : null;
+        if (!userData) return null;
+
+        try {
+            return JSON.parse(userData) as T;
+        } catch {
+            AUTH_CONFIG.clearUserData();
+            return null;
+        }
     },
 
     // Clear user data from both storages

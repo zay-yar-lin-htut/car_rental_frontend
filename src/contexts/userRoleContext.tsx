@@ -41,7 +41,7 @@ export const UserRoleContext = createContext<UserRoleContextValue>({
 
 export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
 	const [role, setRole] = useState<UserRole>(() =>
-		getRoleFromUser(AUTH_CONFIG.getUserData() as AuthUser | null)
+		getRoleFromUser(AUTH_CONFIG.getUserData<AuthUser>())
 	);
 
 	const updateRole = useCallback((user: AuthUser | null) => {

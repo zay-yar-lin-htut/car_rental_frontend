@@ -9,8 +9,15 @@ export interface ApiResponse<T = unknown> {
     data?: T;
 }
 
+export interface AuthResponse {
+    success: boolean;
+    message?: string;
+    token?: string;
+    user?: User;
+}
+
 export interface User {
-    user_id: number;
+    user_id: string;
     user_type_id?: number | string;
     name?: string;
     email?: string;

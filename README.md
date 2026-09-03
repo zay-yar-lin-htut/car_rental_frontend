@@ -30,15 +30,16 @@ dedicated dashboards.
 ```text
 src/
   common/            Shared UI components and hooks
-  contexts/          React context providers (auth, theme, booking, etc.)
+  contexts/          React context providers (user, role, form, and messages)
   services/          API layer (DataServices, Configuration, BaseUrl)
   view/
     home/            Public landing page components
     ride/            Booking / ride flow (Ride, Review, etc.)
     profile/         User profile
-    history/         Booking history
     admin/           Admin & staff dashboards and components
-  history/           History helpers
+  history/           Booking history
+  contactUs/         Contact form
+  types.ts           Shared API/domain types
 ```
 
 ## Environment Variables
@@ -48,16 +49,15 @@ Create a `.env` file (see `.env.example`) with:
 ```text
 VITE_API_BASE_URL=        # Backend base URL, e.g. https://your-backend.onrender.com
 VITE_TOMTOM_KEY=          # TomTom maps API key
-REACT_APP_RECAPTCHA_SITE_KEY=  # Google reCAPTCHA v3 site key
 ```
 
 Never commit real API keys or tokens. `.env` is gitignored.
 
 ## API Configuration
 
-All requests go through `src/services/DataServices.js`, which resolves the base
-URL from `VITE_API_BASE_URL` (falling back to the hardcoded production host in
-`src/services/BaseUrl.js`).
+All requests go through `src/services/DataServices.ts`, which exposes generic
+response types and resolves the base URL from `VITE_API_BASE_URL` (falling back
+to the configured production host in `src/services/BaseUrl.ts`).
 
 ## Installation
 
@@ -69,6 +69,8 @@ npm install
 
 ```bash
 npm run dev
+npm run lint
+npm run typecheck
 ```
 
 ## Production Build
@@ -80,9 +82,8 @@ npm run preview
 
 ## Deployment
 
-The frontend is deployed on Vercel. Set the `VITE_API_BASE_URL`,
-`VITE_TOMTOM_KEY`, and `REACT_APP_RECAPTCHA_SITE_KEY` environment variables in
-your hosting provider's settings.
+The frontend is deployed on Vercel. Set the `VITE_API_BASE_URL` and
+`VITE_TOMTOM_KEY` environment variables in your hosting provider's settings.
 
 ## Backend Repository
 

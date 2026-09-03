@@ -10,7 +10,7 @@ type UpdateResult = { success: boolean; message?: string };
 type ProfileFormData = Record<string, unknown>;
 
 export interface UserProfileData {
-	user_id: number;
+	user_id: string;
 	name?: string;
 	email?: string;
 	phone?: string;
@@ -26,7 +26,7 @@ export const useUserProfile = () => {
 	const navigate = useNavigate();
 	const { showSnackbar } = useSnackbar();
 
-	const [user, setUser] = useState<UserProfileData | null>(AUTH_CONFIG.getUserData() as UserProfileData | null);
+	const [user, setUser] = useState<UserProfileData | null>(AUTH_CONFIG.getUserData<UserProfileData>());
 	const [profileLoading, setProfileLoading] = useState(true);
 	const [openDialog, setOpenDialog] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
