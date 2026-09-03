@@ -11,6 +11,15 @@ node_modules
 dist
 dist-ssr
 *.local
+.vite/
+coverage
+*.tsbuildinfo
+.eslintcache
+
+# Local env files (tracked base .env is NOT ignored; only local overrides are)
+.env
+.env.local
+.env.*.local
 
 # Editor directories and files
 .vscode/*
@@ -24,4 +33,5 @@ dist-ssr
 *.sw?
 
 .config/
-.env
+Thumbs.db
+desktop.ini
